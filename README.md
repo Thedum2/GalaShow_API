@@ -1,2 +1,1 @@
-# GalaShow_API
-GalaGalaGalaGala
+# Galashow_API

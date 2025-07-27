@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Galashow API (Dev & Prod)
+
+Parameters:
+  StageNameParam:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+
+Conditions:
+  IsDev:  !Equals [ !Ref StageNameParam, dev ]
+  IsProd: !Equals [ !Ref StageNameParam, prod ]
+
+Globals:
+  Function:
+    Timeout:   10
+    MemorySize: 128
+
+Resources:
+
+  ### Dev API (only when StageNameParam=dev)
+  DevApi:
+    Condition: IsDev
+    Type: AWS::Serverless::Api
+    Properties:
+      Name:      Galashow-dev
+      StageName: dev
+      Cors:
+        AllowMethods: "'GET,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+
+  ### Prod API (only when StageNameParam=prod)
+  ProdApi:
+    Condition: IsProd
+    Type: AWS::Serverless::Api
+    Properties:
+      Name:      Galashow-prod
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+
+  ### Dev 전용 Lambda + 이벤트
+  DevHelloFunction:
+    Condition: IsDev                   # ← 함수 리소스 단위에만 Condition
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/HelloWorld/
+      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      Runtime: dotnet6
+      Events:
+        Hello:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /hello
+            Method: get
+
+  ### Prod 전용 Lambda + 이벤트
+  ProdHelloFunction:
+    Condition: IsProd                  # ← 함수 리소스 단위에만 Condition
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/HelloWorld/
+      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      Runtime: dotnet6
+      Events:
+        Hello:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /hello
+            Method: get
+
+  ### Dev Custom Domain
+  DevDomain:
+    Condition: IsDev
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName:             api-dev.galashow.xyz
+      RegionalCertificateArn: arn:aws:acm:ap-northeast-2:610495549763:certificate/2c301078-0b91-4d2b-b88c-6e1a643dab7c
+      EndpointConfiguration:
+        Types: [ REGIONAL ]
+
+  ### Prod Custom Domain
+  ProdDomain:
+    Condition: IsProd
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName:             api.galashow.xyz
+      RegionalCertificateArn: arn:aws:acm:ap-northeast-2:610495549763:certificate/2c301078-0b91-4d2b-b88c-6e1a643dab7c
+      EndpointConfiguration:
+        Types: [ REGIONAL ]
+
+  ### Dev BasePathMapping
+  DevBasePathMapping:
+    Condition: IsDev
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn: DevApidevStage
+    Properties:
+      DomainName: !Ref DevDomain
+      RestApiId:  !Ref DevApi
+      Stage:      dev
+      BasePath:   ""
+
+  ### Prod BasePathMapping
+  ProdBasePathMapping:
+    Condition: IsProd
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn: ProdApiprodStage
+    Properties:
+      DomainName: !Ref ProdDomain
+      RestApiId:  !Ref ProdApi
+      Stage:      prod
+      BasePath:   ""
+
+  ### Dev DNS 레코드
+  DevDNSRecord:
+    Condition: IsDev
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: Z001166232XN5SLW00H6Z
+      Name:         api-dev.galashow.xyz
+      Type:         A
+      AliasTarget:
+        DNSName:      !GetAtt DevDomain.RegionalDomainName
+        HostedZoneId: !GetAtt DevDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
+  ### Prod DNS 레코드
+  ProdDNSRecord:
+    Condition: IsProd
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: Z001166232XN5SLW00H6Z
+      Name:         api.galashow.xyz
+      Type:         A
+      AliasTarget:
+        DNSName:      !GetAtt ProdDomain.RegionalDomainName
+        HostedZoneId: !GetAtt ProdDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
+Outputs:
+  DevEndpoint:
+    Condition:   IsDev
+    Description: "Dev invoke URL"
+    Value:       https://api-dev.galashow.xyz/hello
+
+  ProdEndpoint:
+    Condition:   IsProd
+    Description: "Prod invoke URL"
+    Value:       https://api.galashow.xyz/hello
