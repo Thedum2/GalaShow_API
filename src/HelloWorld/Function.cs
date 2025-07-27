@@ -34,10 +34,9 @@ namespace HelloWorld
             var location = await GetCallingIP();
             var body = new Dictionary<string, string>
             {
-                { "message", "hello ymymymymym world" },
-                { "qwe", "qwe world" },
-                { "asd", "asd world" },
-                { "location", location }
+                {
+                    "message", $"Hello World from {location}"
+                }
             };
 
             return new APIGatewayProxyResponse
