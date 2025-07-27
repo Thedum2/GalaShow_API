@@ -3,9 +3,6 @@
   on:
     workflow_dispatch:
       inputs:
-        branch:
-          description: "브랜치 선택"
-          required: true
         stage:
           description: "Deploy Stage Select"
           required: true
