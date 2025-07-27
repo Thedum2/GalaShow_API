@@ -6,7 +6,6 @@
         branch:
           description: "브랜치 선택"
           required: true
-          default: "develop"
         stage:
           description: "Deploy Stage Select"
           required: true
