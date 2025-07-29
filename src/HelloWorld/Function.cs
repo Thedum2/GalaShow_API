@@ -1,49 +1,70 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using System.Net.Http;
-using System.Text.Json;
-
-using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
+using MySql.Data.MySqlClient;
 
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace HelloWorld
 {
-
     public class Function
     {
-
-        private static readonly HttpClient client = new HttpClient();
-
-        private static async Task<string> GetCallingIP()
+        public async Task<APIGatewayProxyResponse> FunctionHandler(
+            APIGatewayProxyRequest input,
+            ILambdaContext context)
         {
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Add("User-Agent", "AWS Lambda .Net Client");
+            // (이미 Program.cs에서 등록했으므로 중복 호출해도 안전합니다)
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            var msg = await client.GetStringAsync("http://checkip.amazonaws.com/").ConfigureAwait(continueOnCapturedContext:false);
+            // SecretsManager에서 DB 자격 증명 조회
+            var db = await new SecretsManagerHelper()
+                .GetDbCredentialsAsync("rds!db-61c5a75e-03e7-49b2-a93f-62c9a0dbb814");
 
-            return msg.Replace("\n","");
-        }
+            // 콘솔에 로깅
+            context.Logger.LogInformation($"User: {db.username}");
+            context.Logger.LogInformation($"Password: {db.password}");
 
-        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
-        {
-
-            var location = await GetCallingIP();
-            var body = new Dictionary<string, string>
+            // MySQL 연결 문자열: utf8mb4로 캐릭터셋 지정
+            var builder = new MySqlConnectionStringBuilder
             {
-                {
-                    "message", $"Hello World from {location}"
-                }
+                Server       = "galashow-dev-db.czywcyua8hiu.ap-northeast-2.rds.amazonaws.com",
+                Port         = 7459,
+                Database     = "galashow_dev",
+                UserID       = db.username,
+                Password     = db.password,
+                CharacterSet = "utf8mb4",
+                SslMode      = MySqlSslMode.None
             };
 
+            string result;
+            try
+            {
+                await using var conn = new MySqlConnection(builder.ConnectionString);
+                await conn.OpenAsync();
+
+                await using var cmd = new MySqlCommand(
+                  "SELECT message FROM greetings LIMIT 1", conn);
+                var message = (string?)await cmd.ExecuteScalarAsync();
+                result = message ?? "No message found";
+            }
+            catch (Exception ex)
+            {
+                context.Logger.LogError(ex, "DB Error");
+                result = $"DB Error: {ex.Message}";
+            }
+
+            // 응답에 charset=utf-8 붙여서 한글 깨짐 방지
             return new APIGatewayProxyResponse
             {
-                Body = JsonSerializer.Serialize(body),
                 StatusCode = 200,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                Body       = result,
+                Headers    = new Dictionary<string, string>
+                {
+                    ["Content-Type"] = "text/plain; charset=utf-8"
+                }
             };
         }
     }
