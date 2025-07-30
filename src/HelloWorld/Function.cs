@@ -12,22 +12,23 @@ namespace HelloWorld
 {
     public class Function
     {
-        public async Task<APIGatewayProxyResponse> FunctionHandler(
+        public Task<APIGatewayProxyResponse> FunctionHandler(
             APIGatewayProxyRequest input,
             ILambdaContext context)
         {
-            // (이미 Program.cs에서 등록했으므로 중복 호출해도 안전합니다)
+            // (중복 호출 안전)
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            // SecretsManager에서 DB 자격 증명 조회
+            /*
+             *
+            // Secrets Manager에서 자격증명 조회
             var db = await new SecretsManagerHelper()
                 .GetDbCredentialsAsync("rds!db-61c5a75e-03e7-49b2-a93f-62c9a0dbb814");
 
-            // 콘솔에 로깅
             context.Logger.LogInformation($"User: {db.username}");
             context.Logger.LogInformation($"Password: {db.password}");
 
-            // MySQL 연결 문자열: utf8mb4로 캐릭터셋 지정
+            // MySQL 연결 문자열 설정
             var builder = new MySqlConnectionStringBuilder
             {
                 Server       = "galashow-dev-db.czywcyua8hiu.ap-northeast-2.rds.amazonaws.com",
@@ -56,16 +57,25 @@ namespace HelloWorld
                 result = $"DB Error: {ex.Message}";
             }
 
-            // 응답에 charset=utf-8 붙여서 한글 깨짐 방지
             return new APIGatewayProxyResponse
             {
                 StatusCode = 200,
-                Body       = result,
-                Headers    = new Dictionary<string, string>
+                Body = result,
+                Headers = new Dictionary<string, string>
                 {
                     ["Content-Type"] = "text/plain; charset=utf-8"
                 }
             };
+             */
+            return Task.FromResult(new APIGatewayProxyResponse
+            {
+                StatusCode = 200,
+                Body = "GalaShow API CI/CD Test",
+                Headers = new Dictionary<string, string>
+                {
+                    ["Content-Type"] = "text/plain; charset=utf-8"
+                }
+            });
         }
     }
 }
