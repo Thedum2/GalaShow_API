@@ -47,10 +47,15 @@ Resources:
   DevHelloFunction:
     Condition: IsDev                   # ← 함수 리소스 단위에만 Condition
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: HelloWorld/HelloWorld.csproj
+        Framework: net8.0
     Properties:
-      CodeUri: ./src/HelloWorld/
-      Handler: HelloWorld
-      Runtime: dotnet6
+      CodeUri: src/HelloWorld/
+      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      Runtime: dotnet8
       Events:
         Hello:
           Type: Api
@@ -63,10 +68,15 @@ Resources:
   ProdHelloFunction:
     Condition: IsProd                  # ← 함수 리소스 단위에만 Condition
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: HelloWorld/HelloWorld.csproj
+        Framework: net8.0
     Properties:
-      CodeUri: ./src/HelloWorld/
-      Handler: HelloWorld
-      Runtime: dotnet6
+      CodeUri: src/HelloWorld/
+      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      Runtime: dotnet8
       Events:
         Hello:
           Type: Api
