@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using GalaShow.Common;
 using MySql.Data.MySqlClient;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -70,7 +71,7 @@ namespace HelloWorld
             return Task.FromResult(new APIGatewayProxyResponse
             {
                 StatusCode = 200,
-                Body = "GalaShow API CI/CD Test",
+                Body = new Class1().TT(),
                 Headers = new Dictionary<string, string>
                 {
                     ["Content-Type"] = "text/plain; charset=utf-8"
