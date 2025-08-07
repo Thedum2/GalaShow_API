@@ -57,7 +57,7 @@ Resources:
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
       Policies:
-        - AWSSecretsManagerReadWrite
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
         GetBanners:
           Type: Api
@@ -86,7 +86,7 @@ Resources:
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
       Policies:
-        - AWSSecretsManagerReadWrite
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
         GetBanners:
           Type: Api
@@ -169,14 +169,3 @@ Resources:
         DNSName:      !GetAtt ProdDomain.RegionalDomainName
         HostedZoneId: !GetAtt ProdDomain.RegionalHostedZoneId
         EvaluateTargetHealth: false
-
-Outputs:
-  DevEndpoint:
-    Condition:   IsDev
-    Description: "Dev invoke URL"
-    Value:       https://api-dev.galashow.xyz/hello
-
-  ProdEndpoint:
-    Condition:   IsProd
-    Description: "Prod invoke URL"
-    Value:       https://api.galashow.xyz/hello
