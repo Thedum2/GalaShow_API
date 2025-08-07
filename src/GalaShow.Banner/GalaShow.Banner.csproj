@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <AWSProjectType>Lambda</AWSProjectType>
+        <OutputType>Library</OutputType>
+        <SolutionName>GalaShow.Banner</SolutionName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Amazon.Lambda.Core" Version="2.6.0"/>
+        <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.0"/>
+        <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0"/>
+        <PackageReference Include="System.Text.Json" Version="8.0.5" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0"/>
+        <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0"/>
+        <!--Common-->
+        <ProjectReference Include="../GalaShow.Common/GalaShow.Common.csproj"/>
+    </ItemGroup>
+
+</Project>

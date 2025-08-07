@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "src\HelloWorld\HelloWorld.csproj", "{ADD2F7F8-D66E-4977-923F-AEB302CBCB33}"
+#
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Banner", "src\Banner\Banner.csproj", "{ADD2F7F8-D66E-4977-923F-AEB302CBCB33}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{95581E8C-76B3-4B21-8281-3CF002536E65}"
 	ProjectSection(SolutionItems) = preProject
@@ -15,6 +15,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6D7A4D10-EDB1-47CB-B4E9-4AE89D55B336}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalaShow.Common", "src\GalaShow.Common\GalaShow.Common.csproj", "{02BF6B97-21CC-4B57-9345-55DF0C213059}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalaShow.Banner", "src\GalaShow.Banner\GalaShow.Banner.csproj", "{189DF876-5785-4EFB-8FE3-3F091A3CC408}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +32,10 @@ Global
 		{02BF6B97-21CC-4B57-9345-55DF0C213059}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02BF6B97-21CC-4B57-9345-55DF0C213059}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02BF6B97-21CC-4B57-9345-55DF0C213059}.Release|Any CPU.Build.0 = Release|Any CPU
+		{189DF876-5785-4EFB-8FE3-3F091A3CC408}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{189DF876-5785-4EFB-8FE3-3F091A3CC408}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{189DF876-5785-4EFB-8FE3-3F091A3CC408}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{189DF876-5785-4EFB-8FE3-3F091A3CC408}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{02BF6B97-21CC-4B57-9345-55DF0C213059} = {6D7A4D10-EDB1-47CB-B4E9-4AE89D55B336}
