@@ -56,6 +56,8 @@ Resources:
       CodeUri: src/GalaShow.Banner/
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
+      Policies:
+        - SecretsManagerReadWrite: true
       Events:
         GetBanners:
           Type: Api
@@ -83,6 +85,8 @@ Resources:
       CodeUri: src/GalaShow.Banner/
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
+      Policies:
+        - SecretsManagerReadWrite: true
       Events:
         GetBanners:
           Type: Api
