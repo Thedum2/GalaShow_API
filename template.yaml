@@ -43,47 +43,60 @@ Resources:
         AllowMethods: "'GET,OPTIONS'"
         AllowHeaders: "'Content-Type'"
 
-  ### Dev 전용 Lambda + 이벤트
-  DevHelloFunction:
-    Condition: IsDev                   # ← 함수 리소스 단위에만 Condition
+  DevBannerFunction:
+    Condition: IsDev
     Type: AWS::Serverless::Function
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: HelloWorld/HelloWorld.csproj
+        ProjectFile: GalaShow.Banner/GalaShow.Banner.csproj
         Framework: net8.0
     Properties:
-      CodeUri: src/HelloWorld/
-      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      FunctionName: DevBannerFunction
+      CodeUri: src/GalaShow.Banner/
+      Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
       Events:
-        Hello:
+        GetBanners:
           Type: Api
           Properties:
             RestApiId: !Ref DevApi
-            Path: /hello
+            Path: /banners
             Method: get
+        UpdateBanner:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /banners/{bannerId}
+            Method: put
 
-  ### Prod 전용 Lambda + 이벤트
-  ProdHelloFunction:
-    Condition: IsProd                  # ← 함수 리소스 단위에만 Condition
+  ProdBannerFunction:
+    Condition: IsProd
     Type: AWS::Serverless::Function
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: HelloWorld/HelloWorld.csproj
+        ProjectFile: GalaShow.Banner/GalaShow.Banner.csproj
         Framework: net8.0
     Properties:
-      CodeUri: src/HelloWorld/
-      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      FunctionName: ProdBannerFunction
+      CodeUri: src/GalaShow.Banner/
+      Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
       Events:
-        Hello:
+        GetBanners:
           Type: Api
           Properties:
             RestApiId: !Ref ProdApi
-            Path: /hello
+            Path: /banners
             Method: get
+        UpdateBanner:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /banners/{bannerId}
+            Method: put
+
 
   ### Dev Custom Domain
   DevDomain:
