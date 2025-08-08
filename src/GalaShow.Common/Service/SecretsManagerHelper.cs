@@ -8,6 +8,7 @@ namespace GalaShow.Common.Service
     public class SecretsManagerHelper : IDisposable
     {
         private readonly IAmazonSecretsManager _client;
+        private static readonly Dictionary<string, DbCredentials> _credentialsCache = new();
 
         public SecretsManagerHelper()
         {
@@ -16,13 +17,23 @@ namespace GalaShow.Common.Service
 
         public async Task<DbCredentials> GetDbCredentialsAsync(string secretName)
         {
+            if (_credentialsCache.TryGetValue(secretName, out var cached))
+            {
+                return cached;
+            }
+
             try
             {
                 var request = new GetSecretValueRequest { SecretId = secretName };
                 var response = await _client.GetSecretValueAsync(request);
-                
+
                 var credentials = JsonSerializer.Deserialize<DbCredentials>(response.SecretString);
-                return credentials ?? throw new InvalidOperationException("Failed to deserialize credentials");
+                if (credentials == null)
+                {
+                    throw new InvalidOperationException("Failed to deserialize credentials");
+                }
+                _credentialsCache[secretName] = credentials;
+                return credentials;
             }
             catch (Exception ex)
             {

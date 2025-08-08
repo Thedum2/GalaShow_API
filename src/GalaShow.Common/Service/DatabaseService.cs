@@ -22,7 +22,7 @@ namespace GalaShow.Common.Service
                 CharacterSet = "utf8mb4",
                 SslMode = MySqlSslMode.Required,
                 ConnectionTimeout = 30,
-                Pooling = false
+                Pooling = true
             };
 
             _connection = new MySqlConnection(builder.ConnectionString);
