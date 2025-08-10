@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
 using GalaShow.Common.Models.Request.Token;
@@ -31,18 +32,18 @@ namespace GalaShow.Token
                     ("POST", "/auth/refresh") => await Refresh(req),
                     ("POST", "/auth/logout") => await Logout(req),
                     ("GET", "/auth/verify") => await Verify(req),
-                    _ => NotFound()
+                    _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
             }
             catch (SecurityTokenException ste)
             {
                 ctx.Logger.LogError($"Auth error: {ste.Message}");
-                return Unauthorized(ste.Message);
+                return ErrorResults.Json(ErrorCode.Unauthorized);
             }
             catch (Exception ex)
             {
                 ctx.Logger.LogError(ex.ToString());
-                return ServerError("Internal server error");
+                return ErrorResults.Json(ErrorCode.Internal);
             }
         }
 
@@ -50,14 +51,14 @@ namespace GalaShow.Token
 
         private static async Task<APIGatewayProxyResponse> Login(APIGatewayProxyRequest req)
         {
-            if (string.IsNullOrWhiteSpace(req.Body)) return Unauthorized("Empty body");
+            if (string.IsNullOrWhiteSpace(req.Body)) return ErrorResults.Json(ErrorCode.Unauthorized);
 
             var dto = JsonSerializer.Deserialize<LoginRequest>(req.Body);
             if (dto is null || string.IsNullOrWhiteSpace(dto.Id) || string.IsNullOrWhiteSpace(dto.Password))
-                return Unauthorized("Invalid credentials");
+                return ErrorResults.Json(ErrorCode.Unauthorized);
 
             var (ok, role) = await TokenService.Instance.ValidateCredentialAsync(dto.Id, dto.Password);
-            if (!ok) return Unauthorized("Invalid credentials");
+            if (!ok) return ErrorResults.Json(ErrorCode.Unauthorized);
 
             var access = TokenService.Instance.IssueAccessToken(dto.Id, role);
             var (raw, hash, refreshExpUtc) = TokenService.Instance.CreateRefreshToken();
@@ -84,22 +85,22 @@ namespace GalaShow.Token
 
                 User = new LoginResponse.UserPayload { Id = dto.Id, Role = role }
             };
-            return Json200(resp);
+            return Success200(resp);
         }
 
         private static async Task<APIGatewayProxyResponse> Refresh(APIGatewayProxyRequest req)
         {
-            if (string.IsNullOrWhiteSpace(req.Body)) return Unauthorized("No body");
+            if (string.IsNullOrWhiteSpace(req.Body)) return ErrorResults.Json(ErrorCode.Unauthorized);
             var dto = JsonSerializer.Deserialize<RefreshRequest>(req.Body);
-            if (string.IsNullOrWhiteSpace(dto?.RefreshToken)) return Unauthorized("No refreshToken");
+            if (string.IsNullOrWhiteSpace(dto?.RefreshToken)) return ErrorResults.Json(ErrorCode.Unauthorized);
 
             var hash = TokenService.HashRefreshRaw(dto.RefreshToken);
 
             var repo = new TokenRepository();
             var rec = await repo.GetByHashAsync(hash);
-            if (rec is null) return Unauthorized("Invalid refreshToken");
-            if (rec.RevokedAt.HasValue) return Unauthorized("Refresh revoked");
-            if (rec.ExpiresAt <= DateTime.UtcNow) return Unauthorized("Refresh expired");
+            if (rec is null) return ErrorResults.Json(ErrorCode.Unauthorized);
+            if (rec.RevokedAt.HasValue) return ErrorResults.Json(ErrorCode.Unauthorized);
+            if (rec.ExpiresAt <= DateTime.UtcNow) return ErrorResults.Json(ErrorCode.Unauthorized);
 
             await repo.RevokeAsync(hash);
 
@@ -129,24 +130,24 @@ namespace GalaShow.Token
 
                 User = new RefreshResponse.UserPayload { Id = rec.UserId, Role = role }
             };
-            return Json200(resp);
+            return Success200(resp);
         }
 
         private static async Task<APIGatewayProxyResponse> Logout(APIGatewayProxyRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.Body))
-                return Json200(new { ok = true });
+                return Success200(new { ok = true });
 
             var dto = JsonSerializer.Deserialize<LogoutRequest>(req.Body);
             if (string.IsNullOrWhiteSpace(dto?.RefreshToken))
-                return Json200(new { ok = true });
+                return Success200(new { ok = true });
 
             var hash = TokenService.HashRefreshRaw(dto.RefreshToken);
 
             var repo = new TokenRepository();
             await repo.RevokeAsync(hash);
 
-            return Json200(new { ok = true });
+            return Success200(new { ok = true });
         }
 
         private static Task<APIGatewayProxyResponse> Verify(APIGatewayProxyRequest req)
@@ -159,7 +160,7 @@ namespace GalaShow.Token
             var exp = user.FindFirst("exp")?.Value;
 
             var body = new VerifyResponse { Sub = sub, Role = role, Exp = exp, Valid = true };
-            return Task.FromResult(Json200(body));
+            return Task.FromResult(Success200(body));
         }
 
         #endregion
@@ -216,32 +217,11 @@ namespace GalaShow.Token
 
         #region !============================Responses============================!
 
-        private static APIGatewayProxyResponse Json200<T>(T body, bool allowCredentials = false) => new()
+        private static APIGatewayProxyResponse Success200<T>(T body, bool allowCredentials = false) => new()
         {
             StatusCode = 200,
             Headers = JsonHeaders(allowCredentials),
             Body = JsonSerializer.Serialize(ApiResponse<T>.SuccessResult(body))
-        };
-
-        private static APIGatewayProxyResponse Unauthorized(string msg = "Unauthorized") => new()
-        {
-            StatusCode = 401,
-            Headers = JsonHeaders(),
-            Body = JsonSerializer.Serialize(ApiResponse<object>.ErrorResult(msg, null, "401"))
-        };
-
-        private static APIGatewayProxyResponse NotFound() => new()
-        {
-            StatusCode = 404,
-            Headers = JsonHeaders(),
-            Body = JsonSerializer.Serialize(ApiResponse<object>.ErrorResult("Not Found", null, "404"))
-        };
-
-        private static APIGatewayProxyResponse ServerError(string msg) => new()
-        {
-            StatusCode = 500,
-            Headers = JsonHeaders(),
-            Body = JsonSerializer.Serialize(ApiResponse<object>.ErrorResult(msg, null, "500"))
         };
 
         #endregion

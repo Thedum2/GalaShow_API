@@ -54,26 +54,29 @@ namespace GalaShow.Common.Service
             return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
         }
 
-        public async Task<APIGatewayProxyResponse?> RequireAuthThen(APIGatewayProxyRequest req, Func<ClaimsPrincipal, Task<APIGatewayProxyResponse>> next)
+        public async Task<APIGatewayProxyResponse?> RequireAuthThen(
+            APIGatewayProxyRequest req,
+            Func<ClaimsPrincipal, Task<APIGatewayProxyResponse>> next,
+            Func<APIGatewayProxyResponse> onExpired,
+            Func<APIGatewayProxyResponse> onUnauthorized)
         {
-            if (req.Headers is null || !req.Headers.TryGetValue("Authorization", out var auth) ||
+            if (req.Headers is null ||
+                !req.Headers.TryGetValue("Authorization", out var auth) ||
                 string.IsNullOrWhiteSpace(auth))
-            {
-                return null;
-            }
+                return onUnauthorized();
 
             try
             {
                 var user = JwtService.Instance.ValidateBearer(auth);
                 return await next(user);
             }
+            catch (SecurityTokenExpiredException)
+            {
+                return onExpired();
+            }
             catch (SecurityTokenException)
             {
-                return null;
-            }
-            catch
-            {
-                return null;
+                return onUnauthorized();
             }
         }
         
