@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
 using GalaShow.Common.Models.Request.Banner;
@@ -28,88 +29,85 @@ namespace GalaShow.Banner
                 {
                     ("GET", "/banners") => await GetAllBanners(),
 
-                    ("PUT", var p) when p.StartsWith("/banners/") => (await TokenService.Instance.RequireAuthThen(
-                                                                         request, _ => UpdateBanner(request)))
-                                                                     ?? Unauthorized(),
+                    ("PUT", var p) when p.StartsWith("/banners/") =>
+                        await TokenService.Instance.RequireAuthThen(
+                            request,
+                            _ => UpdateBanner(request),
+                            ()=> ErrorResults.Json(ErrorCode.AuthTokenExpired),
+                            ()=> ErrorResults.Json(ErrorCode.Unauthorized)
+                        ),
 
-                    _ => CreateNotFoundResponse()
+                    _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
             }
             catch (SecurityTokenException ste)
             {
                 context.Logger.LogError($"Auth error: {ste.Message}");
-                return Unauthorized();
+                return ErrorResults.Json(ErrorCode.Unauthorized);
             }
             catch (Exception ex)
             {
                 context.Logger.LogError($"Error: {ex}");
-                return CreateErrorResponse("Internal server error");
+                return ErrorResults.Json(ErrorCode.Internal);
             }
         }
 
+        #region !============================Handlers============================!
 
         private async Task<APIGatewayProxyResponse> GetAllBanners()
         {
             var banners = await BannerService.Instance.GetAllBannersAsync();
-            if (banners.Count < 10) return CreateNotFoundResponse();
+            if (banners.Count < 10)
+            {
+                return ErrorResults.Json(ErrorCode.BannerNotFound);
+            }
 
             var response = ApiResponse<List<BannerResponse>>.SuccessResult(banners);
-            return new APIGatewayProxyResponse
-            {
-                StatusCode = 200,
-                Body = JsonSerializer.Serialize(response),
-                Headers = CreateJsonHeaders()
-            };
+            return Success200(response);
         }
 
         private async Task<APIGatewayProxyResponse> UpdateBanner(APIGatewayProxyRequest request)
         {
-            if (request.PathParameters == null ||
-                !request.PathParameters.TryGetValue("bannerId", out var idStr) ||
-                !int.TryParse(idStr, out var bannerId))
+            if (request.PathParameters == null || !request.PathParameters.TryGetValue("bannerId", out var idStr) || !int.TryParse(idStr, out var bannerId))
             {
-                return CreateNotFoundResponse();
+                return ErrorResults.Json(ErrorCode.BannerUpdateFailed);
             }
 
             var dto = JsonSerializer.Deserialize<UpdateBannerRequest>(request.Body);
-            if (dto == null) return CreateErrorResponse("Invalid request body");
+            if (dto == null)
+            {
+                return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
+            }
 
             var updated = await BannerService.Instance.UpdateBannerAsync(bannerId, dto.Message);
-            if (updated == 0) return CreateNotFoundResponse();
-
-            var resp = ApiResponse<object>.SuccessResult(null);
-            return new APIGatewayProxyResponse
+            if (updated == 0)
             {
-                StatusCode = 200,
-                Body = JsonSerializer.Serialize(resp),
-                Headers = CreateJsonHeaders()
-            };
-        }
+                return ErrorResults.Json(ErrorCode.BannerUpdateFailed);
+            }
 
-        private static Dictionary<string, string> CreateJsonHeaders() => new()
+            return Success200<object>(null);
+        }
+        #endregion
+
+        #region !============================Helpers============================!
+
+        private static Dictionary<string, string> JsonHeaders() => new()
         {
             ["Content-Type"] = "application/json; charset=utf-8",
             ["Access-Control-Allow-Origin"] = "*"
         };
+        
+        #endregion
+        
+        #region !============================Helpers(Only Success(200))============================!
 
-        private static APIGatewayProxyResponse Unauthorized()
+        private static APIGatewayProxyResponse Success200<T>(T body) => new()
         {
-            var body = JsonSerializer.Serialize(ApiResponse<object>.ErrorResult("Unauthorized", null, "401"));
-            return new APIGatewayProxyResponse { StatusCode = 401, Body = body, Headers = CreateJsonHeaders() };
-        }
+            StatusCode = 200,
+            Headers = JsonHeaders(),
+            Body = JsonSerializer.Serialize(ApiResponse<T>.SuccessResult(body))
+        };
 
-        private static APIGatewayProxyResponse CreateNotFoundResponse()
-        {
-            var response = ApiResponse<object>.ErrorResult("CreateNotFoundResponse", null, "404");
-            return new APIGatewayProxyResponse
-                { StatusCode = 404, Body = JsonSerializer.Serialize(response), Headers = CreateJsonHeaders() };
-        }
-
-        private static APIGatewayProxyResponse CreateErrorResponse(string message)
-        {
-            var response = ApiResponse<object>.ErrorResult(message, null, "500");
-            return new APIGatewayProxyResponse
-                { StatusCode = 500, Body = JsonSerializer.Serialize(response), Headers = CreateJsonHeaders() };
-        }
+        #endregion
     }
 }
