@@ -16,8 +16,8 @@ Conditions:
 
 Globals:
   Function:
-    Timeout:   10
-    MemorySize: 128
+    Timeout:   30
+    MemorySize: 512
 
 Resources:
 
