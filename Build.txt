@@ -1,9 +1,0 @@
-1. sam local stop-api
-
-2. docker ps -a --filter "ancestor=public.ecr.aws/sam/build-dotnet6" -q | ForEach-Object { docker rm -f $_ }
-
-3. .aws-sam 폴더 삭제
-
-4.sam build --use-container
-
-5.sam local start-api --parameter-overrides "StageNameParam=dev" --warm-containers Lazy
