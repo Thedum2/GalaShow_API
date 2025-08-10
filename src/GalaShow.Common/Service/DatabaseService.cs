@@ -1,82 +1,77 @@
-using System.Data;
 using System.Data.Common;
 using GalaShow.Common.Configuration;
+using GalaShow.Common.Infrastructure;
 using MySql.Data.MySqlClient;
 
 namespace GalaShow.Common.Service
 {
-    public class DatabaseService : IDisposable
+    public sealed class DatabaseService : AsyncSingleton<DatabaseService>, IDisposable
     {
-        private readonly MySqlConnection _connection;
-        private bool _disposed = false;
+        private string? _connectionString;
 
-        public DatabaseService(DatabaseConfig config, (string username, string password) credentials)
+        private DatabaseService() { }
+
+        protected override async Task InitializeCoreAsync()
         {
+            var cfg = new DatabaseConfig();
+            var creds = await SecretsService.Instance.GetDbCredentialsAsync(cfg.SecretArn);
+
             var builder = new MySqlConnectionStringBuilder
             {
-                Server = config.Server,
-                Port = config.Port,
-                Database = config.Database,
-                UserID = credentials.username,
-                Password = credentials.password,
+                Server = cfg.Server,
+                Port = cfg.Port,
+                Database = cfg.Database,
+                UserID = creds.Username,
+                Password = creds.Password,
                 CharacterSet = "utf8mb4",
                 SslMode = MySqlSslMode.Required,
                 ConnectionTimeout = 30,
                 Pooling = true
             };
-
-            _connection = new MySqlConnection(builder.ConnectionString);
+            _connectionString = builder.ConnectionString;
         }
 
-        public async Task OpenAsync()
+        private MySqlConnection CreateConn()
         {
-            if (_connection.State != ConnectionState.Open)
-            {
-                await _connection.OpenAsync();
-            }
+            if (string.IsNullOrWhiteSpace(_connectionString))
+                throw new InvalidOperationException("DatabaseService not initialized.");
+            return new MySqlConnection(_connectionString);
         }
 
         public async Task<T?> ExecuteScalarAsync<T>(string sql, params MySqlParameter[] parameters)
         {
-            await using var cmd = new MySqlCommand(sql, _connection);
-            if (parameters.Length > 0)
-            {
-                cmd.Parameters.AddRange(parameters);
-            }
-            
+            await using var conn = CreateConn();
+            await conn.OpenAsync();
+
+            await using var cmd = new MySqlCommand(sql, conn);
+            if (parameters?.Length > 0) cmd.Parameters.AddRange(parameters);
+
             var result = await cmd.ExecuteScalarAsync();
-            return result is T ? (T)result : default(T);
+            return result is T t ? t : default;
         }
 
         public async Task<int> ExecuteNonQueryAsync(string sql, params MySqlParameter[] parameters)
         {
-            await using var cmd = new MySqlCommand(sql, _connection);
-            if (parameters.Length > 0)
-            {
-                cmd.Parameters.AddRange(parameters);
-            }
-            
+            await using var conn = CreateConn();
+            await conn.OpenAsync();
+
+            await using var cmd = new MySqlCommand(sql, conn);
+            if (parameters?.Length > 0) cmd.Parameters.AddRange(parameters);
+
             return await cmd.ExecuteNonQueryAsync();
         }
 
         public async Task<DbDataReader> ExecuteReaderAsync(string sql, params MySqlParameter[] parameters)
         {
-            var cmd = new MySqlCommand(sql, _connection);
-            if (parameters.Length > 0)
-            {
-                cmd.Parameters.AddRange(parameters);
-            }
-            
-            return await cmd.ExecuteReaderAsync();
+            var conn = CreateConn();
+            await conn.OpenAsync();
+
+            var cmd = new MySqlCommand(sql, conn);
+            if (parameters?.Length > 0) cmd.Parameters.AddRange(parameters);
+
+            return await cmd.ExecuteReaderAsync(System.Data.CommandBehavior.CloseConnection);
         }
 
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _connection?.Dispose();
-                _disposed = true;
-            }
-        }
+        public override void Dispose() => base.Dispose();
     }
 }

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace GalaShow.Common.Models.Request
+namespace GalaShow.Common.Models.Request.Banner
 {
     public class UpdateBannerRequest
     {
