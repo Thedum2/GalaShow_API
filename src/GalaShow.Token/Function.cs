@@ -22,6 +22,7 @@ namespace GalaShow.Token
     {
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest req, ILambdaContext ctx)
         {
+            StageResolver.Resolve(req);
             await AppBootstrap.InitAsync();
 
             try

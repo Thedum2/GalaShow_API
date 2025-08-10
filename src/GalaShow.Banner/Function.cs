@@ -18,21 +18,22 @@ namespace GalaShow.Banner
 {
     public class Function
     {
-        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request,
+        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest req,
             ILambdaContext context)
         {
+            StageResolver.Resolve(req);
             await AppBootstrap.InitAsync();
 
             try
             {
-                return (request.HttpMethod, request.Path) switch
+                return (req.HttpMethod, req.Path) switch
                 {
                     ("GET", "/banners") => await GetAllBanners(),
 
                     ("PUT", var p) when p.StartsWith("/banners/") =>
                         await TokenService.Instance.RequireAuthThen(
-                            request,
-                            _ => UpdateBanner(request),
+                            req,
+                            _ => UpdateBanner(req),
                             ()=> ErrorResults.Json(ErrorCode.AuthTokenExpired),
                             ()=> ErrorResults.Json(ErrorCode.Unauthorized)
                         ),
