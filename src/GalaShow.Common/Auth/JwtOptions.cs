@@ -30,7 +30,7 @@ namespace GalaShow.Common.Auth
             };
         }
 
-        private static bool IsDevelopment(string? stage)
+        public static bool IsDevelopment(string? stage)
         {
             if (string.IsNullOrWhiteSpace(stage)) return false;
             return stage.Equals("dev", StringComparison.OrdinalIgnoreCase) || stage.Equals("development", StringComparison.OrdinalIgnoreCase);

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Amazon.Lambda.APIGatewayEvents;
+using GalaShow.Common.Auth;
 using GalaShow.Common.Configuration;
 using GalaShow.Common.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
@@ -41,7 +42,20 @@ namespace GalaShow.Common.Service
         public Task<(bool ok, string role)> ValidateCredentialAsync(string id, string password)
         {
             //TODO:: 추후 인증 로직 구현
-            return Task.FromResult((true, "user"));
+            var stageName =
+                Environment.GetEnvironmentVariable("STAGE") ??
+                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
+                Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+            
+            if (JwtOptions.IsDevelopment(stageName))
+            {
+                if (id.Equals("dev") && password.Equals("dev"))
+                {
+                    return Task.FromResult((true, "admin"));
+                }
+            }
+            
+            return Task.FromResult((false, string.Empty));
         }
 
         private static int GetIntEnv(string key, int def)
