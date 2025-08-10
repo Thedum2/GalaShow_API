@@ -20,7 +20,7 @@ if (Test-Path ".aws-sam") {
 
 # 2. SAM 빌드
 Write-Host "`n[2/3] Building SAM project (host 빌드)..."
-sam build --no-parallel
+sam build
 if ($LASTEXITCODE -ne 0) {
     Write-Error "SAM build failed. 스크립트를 종료합니다."
     exit $LASTEXITCODE
