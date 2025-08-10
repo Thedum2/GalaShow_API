@@ -29,6 +29,8 @@ namespace GalaShow.Common.Service
                 Pooling = true
             };
             _connectionString = builder.ConnectionString;
+            
+            Console.WriteLine($"[DB] Host={builder.Server}, Port={builder.Port}, Db={builder.Database}, User={builder.UserID}, SSL={builder.SslMode}");
         }
 
         private MySqlConnection CreateConn()
