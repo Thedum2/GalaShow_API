@@ -39,7 +39,7 @@
           uses: aws-actions/setup-sam@v2
   
         - name: SAM Build
-          run: sam build --no-parallel        
+          run: sam build      
         
         - name: SAM Deploy
           run: |
