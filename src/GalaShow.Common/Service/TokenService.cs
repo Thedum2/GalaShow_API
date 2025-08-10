@@ -42,13 +42,7 @@ namespace GalaShow.Common.Service
 
         public Task<(bool ok, string role)> ValidateCredentialAsync(string id, string password)
         {
-            var stageName =
-                Environment.GetEnvironmentVariable("STAGE") ??
-                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
-                Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-
-            var isDev = JwtOptions.IsDevelopment(stageName);
-            Console.WriteLine($"[Auth] ValidateCredentialAsync called. Stage={stageName}, IsDev={isDev}, IdPresent={(string.IsNullOrEmpty(id) ? "false" : "true")}");
+            var isDev = StageResolver.IsDev();
 
             if (isDev)
             {
@@ -57,18 +51,12 @@ namespace GalaShow.Common.Service
                     Console.WriteLine("[Auth] Dev credential accepted.");
                     return Task.FromResult((true, "admin"));
                 }
-                else
-                {
-                    Console.WriteLine("[Auth] Dev credential rejected: id/password mismatch.");
-                    return Task.FromResult((false, string.Empty));
-                }
             }
 
-            Console.WriteLine($"[Auth] Credential rejected: Not development stage (Stage={stageName}).");
             return Task.FromResult((false, string.Empty));
         }
 
-
+    
         private static int GetIntEnv(string key, int def)
             => int.TryParse(Environment.GetEnvironmentVariable(key), out var v) ? v : def;
 

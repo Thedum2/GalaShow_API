@@ -16,6 +16,8 @@ namespace GalaShow.Common.Infrastructure
             await TokenService.Instance.InitializeAsync();
             await DatabaseService.Instance.InitializeAsync();
             await BannerService.Instance.InitializeAsync();
+
+            StageResolver.Resolve();
         }
     }
 }

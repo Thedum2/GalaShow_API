@@ -1,3 +1,5 @@
+using GalaShow.Common.Configuration;
+
 namespace GalaShow.Common.Auth
 {
     public class JwtOptions
@@ -10,13 +12,8 @@ namespace GalaShow.Common.Auth
         private const string ProdSecretArn = "arn:aws:secretsmanager:ap-northeast-2:610495549763:secret:prod/galashow-AuW7Z5";
         public static JwtOptions FromEnv()
         {
-            var stageName =
-                Environment.GetEnvironmentVariable("STAGE") ??
-                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
-                Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-
-            var isDev = IsDevelopment(stageName);
-
+            bool isDev = StageResolver.IsDev();
+            
             var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "galashow";
             var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "galashow-client";
 
@@ -28,12 +25,6 @@ namespace GalaShow.Common.Auth
                 Audience = audience,
                 SecretArn = secretArn
             };
-        }
-
-        public static bool IsDevelopment(string? stage)
-        {
-            if (string.IsNullOrWhiteSpace(stage)) return false;
-            return stage.Equals("dev", StringComparison.OrdinalIgnoreCase) || stage.Equals("development", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
