@@ -28,11 +28,7 @@ namespace GalaShow.Common.Service
                 var response = await _client.GetSecretValueAsync(request);
 
                 var credentials = JsonSerializer.Deserialize<DbCredentials>(response.SecretString);
-                if (credentials == null)
-                {
-                    throw new InvalidOperationException("Failed to deserialize credentials");
-                }
-                _credentialsCache[secretName] = credentials;
+                _credentialsCache[secretName] = credentials ?? throw new InvalidOperationException("Failed to deserialize credentials");
                 return credentials;
             }
             catch (Exception ex)
