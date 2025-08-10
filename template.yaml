@@ -100,8 +100,83 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /banners/{bannerId}
             Method: put
-
-
+            
+  
+  DevTokenFunction:
+    Condition: IsDev
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Token/GalaShow.Token.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: DevTokenFunction
+      CodeUri: src/GalaShow.Token/
+      Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        Login:
+          Type: Api
+          Properties:
+            Path: /auth/login
+            Method: POST
+        Refresh:
+          Type: Api
+          Properties:
+            Path: /auth/refresh
+            Method: POST
+        Logout:
+          Type: Api
+          Properties:
+            Path: /auth/logout
+            Method: POST
+        Verify:
+          Type: Api
+          Properties:
+            Path: /auth/verify
+            Method: GET
+            
+  ProdTokenFunction:
+    Condition: IsProd
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Token/GalaShow.Token.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: ProdTokenFunction
+      CodeUri: src/GalaShow.Token/
+      Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        Login:
+          Type: Api
+          Properties:
+            Path: /auth/login
+            Method: POST
+        Refresh:
+          Type: Api
+          Properties:
+            Path: /auth/refresh
+            Method: POST
+        Logout:
+          Type: Api
+          Properties:
+            Path: /auth/logout
+            Method: POST
+        Verify:
+          Type: Api
+          Properties:
+            Path: /auth/verify
+            Method: GET
+            
+          
   ### Dev Custom Domain
   DevDomain:
     Condition: IsDev

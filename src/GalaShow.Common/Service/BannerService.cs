@@ -1,31 +1,32 @@
-using GalaShow.Common.Models.Response;
+using GalaShow.Common.Infrastructure;
+using GalaShow.Common.Models.Response.Banner;
 using GalaShow.Common.Repositories;
 
-namespace GalaShow.Common.Service;
-
-public class BannerService
+namespace GalaShow.Common.Service
 {
-    private readonly BannerRepository _bannerRepository;
-
-    public BannerService(BannerRepository bannerRepository)
+    public sealed class BannerService : AsyncSingleton<BannerService>
     {
-        _bannerRepository = bannerRepository;
-    }
+        private readonly BannerRepository _repo = new();
 
-    public async Task<List<BannerResponse>> GetAllBannersAsync()
-    {
-        var banners = await _bannerRepository.GetAllAsync();
+        private BannerService() { }
 
-        return banners.Select(banner => new BannerResponse
+        protected override Task InitializeCoreAsync()
         {
-            Id = banner.Id,
-            Message = banner.Message,
-            Order = banner.Order
-        }).ToList();
-    }
+            return Task.CompletedTask;
+        }
 
-    public async Task<int> UpdateBannerAsync(int id, string message)
-    {
-        return await _bannerRepository.UpdateAsync(id, message);
+        public async Task<List<BannerResponse>> GetAllBannersAsync()
+        {
+            var banners = await _repo.GetAllAsync();
+            return banners.Select(b => new BannerResponse
+            {
+                Id     = b.Id,
+                Message= b.Message,
+                Order  = b.Order
+            }).ToList();
+        }
+
+        public Task<int> UpdateBannerAsync(int id, string message)
+            => _repo.UpdateAsync(id, message);
     }
 }
