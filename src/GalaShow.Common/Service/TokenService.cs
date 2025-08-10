@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Runtime.Internal.Util;
 using GalaShow.Common.Auth;
 using GalaShow.Common.Configuration;
 using GalaShow.Common.Infrastructure;
@@ -41,22 +42,32 @@ namespace GalaShow.Common.Service
 
         public Task<(bool ok, string role)> ValidateCredentialAsync(string id, string password)
         {
-            //TODO:: 추후 인증 로직 구현
             var stageName =
                 Environment.GetEnvironmentVariable("STAGE") ??
                 Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
                 Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-            
-            if (JwtOptions.IsDevelopment(stageName))
+
+            var isDev = JwtOptions.IsDevelopment(stageName);
+            Console.WriteLine($"[Auth] ValidateCredentialAsync called. Stage={stageName}, IsDev={isDev}, IdPresent={(string.IsNullOrEmpty(id) ? "false" : "true")}");
+
+            if (isDev)
             {
-                if (id.Equals("dev") && password.Equals("dev"))
+                if (id == "dev" && password == "dev")
                 {
+                    Console.WriteLine("[Auth] Dev credential accepted.");
                     return Task.FromResult((true, "admin"));
                 }
+                else
+                {
+                    Console.WriteLine("[Auth] Dev credential rejected: id/password mismatch.");
+                    return Task.FromResult((false, string.Empty));
+                }
             }
-            
+
+            Console.WriteLine($"[Auth] Credential rejected: Not development stage (Stage={stageName}).");
             return Task.FromResult((false, string.Empty));
         }
+
 
         private static int GetIntEnv(string key, int def)
             => int.TryParse(Environment.GetEnvironmentVariable(key), out var v) ? v : def;
