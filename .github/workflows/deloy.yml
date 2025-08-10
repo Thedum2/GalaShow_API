@@ -39,8 +39,8 @@
           uses: aws-actions/setup-sam@v2
   
         - name: SAM Build
-          run: sam build
-  
+          run: sam build --no-parallel        
+        
         - name: SAM Deploy
           run: |
             echo "Deploying to stage: ${{ inputs.stage }}"
