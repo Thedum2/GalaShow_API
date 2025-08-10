@@ -16,7 +16,7 @@ Conditions:
 
 Globals:
   Function:
-    Timeout:   30
+    Timeout: 30
     MemorySize: 512
 
 Resources:
@@ -29,8 +29,9 @@ Resources:
       Name:      Galashow-dev
       StageName: dev
       Cors:
-        AllowMethods: "'GET,OPTIONS'"
-        AllowHeaders: "'Content-Type'"
+        AllowMethods: "'GET,POST,PUT,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
 
   ### Prod API (only when StageNameParam=prod)
   ProdApi:
@@ -40,8 +41,9 @@ Resources:
       Name:      Galashow-prod
       StageName: prod
       Cors:
-        AllowMethods: "'GET,OPTIONS'"
-        AllowHeaders: "'Content-Type'"
+        AllowMethods: "'GET,POST,PUT,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
 
   DevBannerFunction:
     Condition: IsDev
@@ -100,8 +102,7 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /banners/{bannerId}
             Method: put
-            
-  
+
   DevTokenFunction:
     Condition: IsDev
     Type: AWS::Serverless::Function
@@ -121,24 +122,28 @@ Resources:
         Login:
           Type: Api
           Properties:
+            RestApiId: !Ref DevApi
             Path: /auth/login
-            Method: POST
+            Method: post
         Refresh:
           Type: Api
           Properties:
+            RestApiId: !Ref DevApi
             Path: /auth/refresh
-            Method: POST
+            Method: post
         Logout:
           Type: Api
           Properties:
+            RestApiId: !Ref DevApi
             Path: /auth/logout
-            Method: POST
+            Method: post
         Verify:
           Type: Api
           Properties:
+            RestApiId: !Ref DevApi
             Path: /auth/verify
-            Method: GET
-            
+            Method: get
+
   ProdTokenFunction:
     Condition: IsProd
     Type: AWS::Serverless::Function
@@ -158,25 +163,28 @@ Resources:
         Login:
           Type: Api
           Properties:
+            RestApiId: !Ref ProdApi
             Path: /auth/login
-            Method: POST
+            Method: post
         Refresh:
           Type: Api
           Properties:
+            RestApiId: !Ref ProdApi
             Path: /auth/refresh
-            Method: POST
+            Method: post
         Logout:
           Type: Api
           Properties:
+            RestApiId: !Ref ProdApi
             Path: /auth/logout
-            Method: POST
+            Method: post
         Verify:
           Type: Api
           Properties:
+            RestApiId: !Ref ProdApi
             Path: /auth/verify
-            Method: GET
-            
-          
+            Method: get
+
   ### Dev Custom Domain
   DevDomain:
     Condition: IsDev
@@ -219,7 +227,7 @@ Resources:
       Stage:      prod
       BasePath:   ""
 
-  ### Dev DNS 레코드
+  ### Dev DNS Record
   DevDNSRecord:
     Condition: IsDev
     Type: AWS::Route53::RecordSet
@@ -232,7 +240,7 @@ Resources:
         HostedZoneId: !GetAtt DevDomain.RegionalHostedZoneId
         EvaluateTargetHealth: false
 
-  ### Prod DNS 레코드
+  ### Prod DNS Record
   ProdDNSRecord:
     Condition: IsProd
     Type: AWS::Route53::RecordSet
