@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace GalaShow.Common.Models.Response
+namespace GalaShow.Common.Models.Response.Banner
 {
     public class BannerResponse
     {
