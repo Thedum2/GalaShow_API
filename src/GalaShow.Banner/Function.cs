@@ -62,9 +62,8 @@ namespace GalaShow.Banner
             {
                 return ErrorResults.Json(ErrorCode.BannerNotFound);
             }
-
-            var response = ApiResponse<List<BannerResponse>>.SuccessResult(banners);
-            return Success200(response);
+            
+            return Success200(banners);
         }
 
         private async Task<APIGatewayProxyResponse> UpdateBanner(APIGatewayProxyRequest request)
