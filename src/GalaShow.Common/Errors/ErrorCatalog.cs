@@ -25,6 +25,9 @@ namespace GalaShow.Common.Errors
 
             [ErrorCode.BannerNotFound]         = new(ErrorCode.BannerNotFound, "Banner not found", 404),
             [ErrorCode.BannerUpdateFailed]     = new(ErrorCode.BannerUpdateFailed, "Failed to update banner", 500),
+
+            [ErrorCode.BackgroundNotFound]         = new(ErrorCode.BackgroundNotFound, "Background not found", 404),
+            [ErrorCode.BackgroundUpdateFailed]     = new(ErrorCode.BackgroundUpdateFailed, "Failed to update Background", 500),
         };
 
         public static ErrorInfo Get(ErrorCode code, string? msgOverride = null)
