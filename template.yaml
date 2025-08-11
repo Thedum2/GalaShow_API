@@ -184,6 +184,64 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /auth/verify
             Method: get
+            
+  DevBackgroundFunction:
+    Condition: IsDev
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.BackGround/GalaShow.BackGround.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: DevBackgroundFunction
+      CodeUri: src/GalaShow.BackGround/
+      Handler: GalaShow.BackGround::GalaShow.BackGround.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetBackgroundVideos:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /background
+            Method: get
+        UpdateBackgroundVideo:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /background/{backId}
+            Method: put
+            
+  ProdBackgroundFunction:
+    Condition: IsProd
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.BackGround/GalaShow.BackGround.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: ProdBackgroundFunction
+      CodeUri: src/GalaShow.BackGround/
+      Handler: GalaShow.BackGround::GalaShow.BackGround.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetBackgroundVideos:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /background
+            Method: get
+        UpdateBackgroundVideo:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /background/{backId}
+            Method: put
 
   ### Dev Custom Domain
   DevDomain:
