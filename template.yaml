@@ -185,6 +185,7 @@ Resources:
             Path: /auth/verify
             Method: get
             
+            
   DevBackgroundFunction:
     Condition: IsDev
     Type: AWS::Serverless::Function
@@ -214,6 +215,7 @@ Resources:
             Path: /background/{backId}
             Method: put
             
+            
   ProdBackgroundFunction:
     Condition: IsProd
     Type: AWS::Serverless::Function
@@ -242,7 +244,64 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /background/{backId}
             Method: put
-
+  
+  DevPolicyFunction:
+    Condition: IsDev
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Policy/GalaShow.Policy.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: DevPolicyFunction
+      CodeUri: src/GalaShow.Policy/
+      Handler: GalaShow.Policy::GalaShow.Policy.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetPolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /policies
+            Method: get
+        UpdatePolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /policies
+            Method: put
+            
+  ProdPolicyFunction:
+    Condition: IsProd
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Policy/GalaShow.Policy.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: ProdPolicyFunction
+      CodeUri: src/GalaShow.Policy/
+      Handler: GalaShow.Policy::GalaShow.Policy.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetPolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /policies
+            Method: get
+        UpdatePolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /policies
+            Method: put 
   ### Dev Custom Domain
   DevDomain:
     Condition: IsDev

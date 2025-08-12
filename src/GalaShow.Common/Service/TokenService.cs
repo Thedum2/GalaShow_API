@@ -69,9 +69,9 @@ namespace GalaShow.Common.Service
 
         public async Task<APIGatewayProxyResponse?> RequireAuthThen(
             APIGatewayProxyRequest req,
-            Func<ClaimsPrincipal, Task<APIGatewayProxyResponse>> next,
-            Func<APIGatewayProxyResponse> onExpired,
-            Func<APIGatewayProxyResponse> onUnauthorized)
+            Func<ClaimsPrincipal, Task<APIGatewayProxyResponse?>> next,
+            Func<APIGatewayProxyResponse?> onExpired,
+            Func<APIGatewayProxyResponse?> onUnauthorized)
         {
             if (req.Headers is null ||
                 !req.Headers.TryGetValue("Authorization", out var auth) ||

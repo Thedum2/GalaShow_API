@@ -28,6 +28,9 @@ namespace GalaShow.Common.Errors
 
             [ErrorCode.BackgroundNotFound]         = new(ErrorCode.BackgroundNotFound, "Background not found", 404),
             [ErrorCode.BackgroundUpdateFailed]     = new(ErrorCode.BackgroundUpdateFailed, "Failed to update Background", 500),
+            
+            [ErrorCode.PolicyNotFound]         = new(ErrorCode.PolicyNotFound, "Policy not found", 404),
+            [ErrorCode.PolicyUpdateFailed]     = new(ErrorCode.PolicyUpdateFailed, "Failed to update Policy", 500),
         };
 
         public static ErrorInfo Get(ErrorCode code, string? msgOverride = null)

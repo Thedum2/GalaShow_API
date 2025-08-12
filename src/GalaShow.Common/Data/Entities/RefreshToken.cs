@@ -1,4 +1,3 @@
-// src/GalaShow.Common/Data/Entities/RefreshToken.cs
 namespace GalaShow.Common.Data.Entities
 {
     public class RefreshToken

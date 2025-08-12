@@ -27,9 +27,13 @@ namespace GalaShow.Common.Errors
         BannerNotFound       = 3004,
         BannerUpdateFailed   = 3005,
         
-        // Background (6xxx)
-        BackgroundNotFound       = 6004,
-        BackgroundUpdateFailed   = 6005,
+        // Background (4xxx)
+        BackgroundNotFound       = 4004,
+        BackgroundUpdateFailed   = 4005,
+        
+        // Policy (5xxx)
+        PolicyNotFound       = 5004,
+        PolicyUpdateFailed   = 5005,
         
     }
 }
