@@ -6,7 +6,7 @@ namespace GalaShow.Common.Errors
 {
     public static class ErrorResults
     {
-        public static APIGatewayProxyResponse Json(ErrorCode code, string? message = null, IEnumerable<string>? details = null, IDictionary<string,string>? extraHeaders = null)
+        public static APIGatewayProxyResponse? Json(ErrorCode code, string? message = null, IEnumerable<string>? details = null, IDictionary<string,string>? extraHeaders = null)
         {
             var info = ErrorCatalog.Get(code, message);
 
