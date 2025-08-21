@@ -31,6 +31,9 @@ namespace GalaShow.Common.Errors
             
             [ErrorCode.PolicyNotFound]         = new(ErrorCode.PolicyNotFound, "Policy not found", 404),
             [ErrorCode.PolicyUpdateFailed]     = new(ErrorCode.PolicyUpdateFailed, "Failed to update Policy", 500),
+            
+            [ErrorCode.SnsLinkNotFound]         = new(ErrorCode.PolicyNotFound, "SnsLinkNotFound not found", 404),
+            [ErrorCode.SnsLinkUpdateFailed]     = new(ErrorCode.PolicyUpdateFailed, "Failed to update SnsLinkNotFound", 500),
         };
 
         public static ErrorInfo Get(ErrorCode code, string? msgOverride = null)

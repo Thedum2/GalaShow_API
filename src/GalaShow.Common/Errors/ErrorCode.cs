@@ -35,5 +35,8 @@ namespace GalaShow.Common.Errors
         PolicyNotFound       = 5004,
         PolicyUpdateFailed   = 5005,
         
+        // Policy (6xxx)
+        SnsLinkNotFound       = 6004,
+        SnsLinkUpdateFailed   = 6005,
     }
 }

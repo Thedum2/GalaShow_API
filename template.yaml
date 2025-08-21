@@ -302,6 +302,65 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /policies
             Method: put 
+
+  DevSnsFunction:
+    Condition: IsDev
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Sns/GalaShow.Sns.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: DevSnsFunction
+      CodeUri: src/GalaShow.Sns/
+      Handler: GalaShow.Sns::GalaShow.Sns.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetPolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /policies
+            Method: get
+        UpdatePolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /policies
+            Method: put
+  
+  ProdSnsFunction:
+    Condition: IsProd
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Sns/GalaShow.Sns.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: ProdSnsFunction
+      CodeUri: src/GalaShow.Sns/
+      Handler: GalaShow.Sns::GalaShow.Sns.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetPolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /sns-links
+            Method: get
+        UpdatePolicy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /sns-links
+            Method: put
+  
   ### Dev Custom Domain
   DevDomain:
     Condition: IsDev

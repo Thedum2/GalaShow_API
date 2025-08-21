@@ -10,12 +10,15 @@ namespace GalaShow.Common.Infrastructure
 
         private static async Task InitializeCoreAsync()
         {
-            //모든 싱글톤 여기서 초기화ㅋ
             await SecretsService.Instance.InitializeAsync();
+            await DatabaseService.Instance.InitializeAsync();
             await JwtService.Instance.InitializeAsync();
             await TokenService.Instance.InitializeAsync();
-            await DatabaseService.Instance.InitializeAsync();
+            //====================================================
+            await BackgroundService.Instance.InitializeAsync();
             await BannerService.Instance.InitializeAsync();
+            await PolicyService.Instance.InitializeAsync();
+            await SnsService.Instance.InitializeAsync();
         }
     }
 }
