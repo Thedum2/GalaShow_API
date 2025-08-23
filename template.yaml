@@ -323,13 +323,13 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref DevApi
-            Path: /policies
+            Path: /sns-links
             Method: get
         UpdatePolicy:
           Type: Api
           Properties:
             RestApiId: !Ref DevApi
-            Path: /policies
+            Path: /sns-links
             Method: put
   
   ProdSnsFunction:
