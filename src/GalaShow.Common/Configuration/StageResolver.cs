@@ -13,15 +13,11 @@ public static class StageResolver
 {
     private static Stage _current = Stage.None;
 
-    /// <summary>
-    /// 현재 스테이지를 판별하여 캐시합니다.
-    /// 우선순위: SAM 로컬 → RequestContext.Stage → Host → Env → 함수명 → 기본(Dev)
-    /// </summary>
+
     public static Stage Resolve(APIGatewayProxyRequest? req = null)
     {
         if (_current != Stage.None) return _current;
 
-        // 0) SAM 로컬 실행이면 무조건 dev
         var isLocal = string.Equals(
             Environment.GetEnvironmentVariable("AWS_SAM_LOCAL"),
             "true",
@@ -65,7 +61,6 @@ public static class StageResolver
                 stageName = fromFn;
         }
 
-        // 5) 최종 결정 (기본: Dev)
         _current = Parse(stageName) switch
         {
             Stage.None => Stage.Dev,
@@ -89,7 +84,6 @@ public static class StageResolver
         if (host.Contains("api-dev.galashow.xyz", StringComparison.OrdinalIgnoreCase)) return "dev";
         if (host.Contains("api.galashow.xyz", StringComparison.OrdinalIgnoreCase)) return "prod";
 
-        // api-<stage>.galashow.xyz 패턴 대응
         var parts = host.Split('.');
         if (parts.Length >= 3 && parts[0].StartsWith("api-", StringComparison.OrdinalIgnoreCase))
             return parts[0].Substring("api-".Length);

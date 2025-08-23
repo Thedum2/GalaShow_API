@@ -30,9 +30,6 @@ namespace GalaShow.Common.Repositories
             };
         }
 
-        /// <summary>
-        /// 한 건만 유지하는 정책 테이블: 있으면 1건만 UPDATE, 없으면 INSERT
-        /// </summary>
         public async Task<int> UpsertSingletonAsync(string tosUrl, string ppUrl)
         {
             const string updateSql = @"UPDATE policies SET terms_of_service_url = @tos, privacy_policy_url = @pp, updated_at = NOW() ORDER BY id ASC LIMIT 1";

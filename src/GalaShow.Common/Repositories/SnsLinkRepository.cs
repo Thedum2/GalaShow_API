@@ -37,18 +37,12 @@ namespace GalaShow.Common.Repositories
             }
             return list;
         }
-
-        /// <summary>
-        /// 전달받은 목록으로 전량 교체 (DELETE ALL → INSERT ...) 방식.
-        /// 트랜잭션이 필요하면 DatabaseService에 맞춰 확장해도 됨.
-        /// </summary>
+        
         public async Task<int> ReplaceAllAsync(IEnumerable<SnsLink> items)
         {
-            // 1) 모두 삭제
             const string deleteSql = "DELETE FROM sns_links;";
             await _db.ExecuteNonQueryAsync(deleteSql);
 
-            // 2) 다시 삽입
             const string insertSql = @"
                 INSERT INTO sns_links (title, url, icon_url, `order`, created_at, updated_at)
                 VALUES (@title, @url, @icon_url, @order, NOW(), NOW());";
