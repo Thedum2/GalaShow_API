@@ -12,15 +12,15 @@ namespace GalaShow.Common.Configuration
         {
             if (StageResolver.IsDev())
             {
-                SecretArn = "rds!db-61c5a75e-03e7-49b2-a93f-62c9a0dbb814";
-                Server = "galashow-dev-db.czywcyua8hiu.ap-northeast-2.rds.amazonaws.com";
-                Database = "galashow_dev";
+                SecretArn = "rds!db-3230a24e-c513-4343-b32d-4b082afea0e5";
+                Server = "galashow-db-dev.czywcyua8hiu.ap-northeast-2.rds.amazonaws.com";
+                Database = "galashow";
             }
             else
             {
-                SecretArn = "rds!db-7e99ba07-7a4a-4108-96b3-107b6a6832a8";
-                Server = "galashow-prod-db.czywcyua8hiu.ap-northeast-2.rds.amazonaws.com";
-                Database = "galashow_prod";
+                SecretArn = "test";
+                Server = "test";
+                Database = "test";
             }
             Port = 7459;
         }
