@@ -38,6 +38,7 @@ s3_prefix = "Galashow"
 region = "ap-northeast-2"
 disable_rollback = true
 image_repositories = []
+s3_bucket = "galashow-dev-api"
 
 [prod.global.parameters]
 stack_name = "Galashow-prod"
@@ -51,3 +52,4 @@ s3_prefix = "Galashow"
 region = "ap-northeast-2"
 disable_rollback = true
 image_repositories = []
+s3_bucket = "galashow-prod-api"

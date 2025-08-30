@@ -186,6 +186,7 @@ Resources:
             Method: get
             
             
+            
   DevBackgroundFunction:
     Condition: IsDev
     Type: AWS::Serverless::Function
@@ -214,6 +215,7 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /background/{backId}
             Method: put
+            
             
             
   ProdBackgroundFunction:
@@ -273,6 +275,7 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /policies
             Method: put
+            
             
   ProdPolicyFunction:
     Condition: IsProd
