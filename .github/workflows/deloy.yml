@@ -44,4 +44,4 @@
         - name: SAM Deploy
           run: |
             echo "Deploying to stage: ${{ inputs.stage }}"
-            sam deploy --config-env dev
+            sam deploy --config-env dev --no-confirm-changeset --no-fail-on-empty-changeset
