@@ -33,7 +33,6 @@ stack_name = "Galashow-dev"
 parameter_overrides = "StageNameParam=dev"
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 confirm_changeset = true
-resolve_s3 = true
 s3_prefix = "Galashow"
 region = "ap-northeast-2"
 disable_rollback = true
@@ -47,7 +46,6 @@ stack_name = "Galashow-prod"
 parameter_overrides = "StageNameParam=prod"
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 confirm_changeset = true
-resolve_s3 = true
 s3_prefix = "Galashow"
 region = "ap-northeast-2"
 disable_rollback = true
