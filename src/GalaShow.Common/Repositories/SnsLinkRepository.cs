@@ -52,6 +52,7 @@ namespace GalaShow.Common.Repositories
             {
                 var p = new[]
                 {
+                    new MySqlParameter("@id", MySqlDbType.Int32){ Value = s.Id },
                     new MySqlParameter("@title", MySqlDbType.VarChar){ Value = s.Title },
                     new MySqlParameter("@url",   MySqlDbType.Text)   { Value = s.Url   },
                     new MySqlParameter("@icon_url",  MySqlDbType.Text)   { Value = s.IconUrl  },
