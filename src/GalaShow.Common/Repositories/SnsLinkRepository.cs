@@ -44,8 +44,8 @@ namespace GalaShow.Common.Repositories
             await _db.ExecuteNonQueryAsync(deleteSql);
 
             const string insertSql = @"
-                INSERT INTO sns_links (title, url, icon_url, `order`, created_at, updated_at)
-                VALUES (@title, @url, @icon_url, @order, NOW(), NOW());";
+                INSERT INTO sns_links (id, title, url, icon_url, `order`, created_at, updated_at)
+                VALUES (@id, @title, @url, @icon_url, @order, NOW(), NOW());";
 
             int affected = 0;
             foreach (var s in items)
