@@ -18,7 +18,7 @@ namespace GalaShow.Common.Service
         public async Task<List<BannerResponse>> GetAllBannersAsync()
         {
             var banners = await _repo.GetAllAsync();
-            return banners.Select(b => new BannerResponse
+            return banners.Select(b => new BannerResponse   
             {
                 Id     = b.Id,
                 Message= b.Message,

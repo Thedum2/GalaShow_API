@@ -32,6 +32,7 @@ namespace GalaShow.Common.Service
             var normalized = req.Data
                 .Select(d => new SnsLink
                 {
+                    Id = d.Id,
                     Title = (d.Title ?? "").Trim(),
                     Url   = (d.Url   ?? "").Trim(),
                     IconUrl  = (d.IconUrl  ?? "").Trim(),
