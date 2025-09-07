@@ -222,7 +222,7 @@ namespace GalaShow.Token
         {
             StatusCode = 200,
             Headers = JsonHeaders(allowCredentials),
-            Body = JsonSerializer.Serialize(ApiResponse<T>.SuccessResult(body))
+            Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
         };
 
         #endregion

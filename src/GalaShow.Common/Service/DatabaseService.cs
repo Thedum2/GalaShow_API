@@ -74,6 +74,41 @@ namespace GalaShow.Common.Service
             return await cmd.ExecuteReaderAsync(System.Data.CommandBehavior.CloseConnection);
         }
 
+        public async Task ExecuteInTransactionAsync(Func<MySqlConnection, MySqlTransaction, Task> operation)
+        {
+            await using var conn = CreateConn();
+            await conn.OpenAsync();
+            await using var transaction = await conn.BeginTransactionAsync();
+
+            try
+            {
+                await operation(conn, transaction);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<T?> ExecuteScalarAsync<T>(string sql, MySqlConnection conn, MySqlTransaction tr, params MySqlParameter[] parameters)
+        {
+            await using var cmd = new MySqlCommand(sql, conn, tr);
+            if (parameters?.Length > 0) cmd.Parameters.AddRange(parameters);
+
+            var result = await cmd.ExecuteScalarAsync();
+            return result is T t ? t : default;
+        }
+
+        public async Task<int> ExecuteNonQueryAsync(string sql, MySqlConnection conn, MySqlTransaction tr, params MySqlParameter[] parameters)
+        {
+            await using var cmd = new MySqlCommand(sql, conn, tr);
+            if (parameters?.Length > 0) cmd.Parameters.AddRange(parameters);
+
+            return await cmd.ExecuteNonQueryAsync();
+        }
+
         public override void Dispose() => base.Dispose();
     }
 }

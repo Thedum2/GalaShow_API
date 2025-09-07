@@ -50,7 +50,7 @@ namespace GalaShow.Common.Service
 
         public string IssueCustomToken(IEnumerable<Claim> claims, TimeSpan lifetime, string? issuerOverride = null, string? audienceOverride = null) => Creator.IssueToken(claims, lifetime, issuerOverride, audienceOverride);
 
-        public ClaimsPrincipal ValidateBearer(string? authorization) => Validator.ValidateBearer(authorization);
+        public ClaimsPrincipal? ValidateBearer(string? authorization) => Validator.ValidateBearer(authorization);
 
         public override void Dispose() => base.Dispose();
     }

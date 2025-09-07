@@ -1,42 +1,53 @@
 namespace GalaShow.Common.Errors
 {
-    // 도메인별 번호대 예시: 1xxx 공통, 2xxx 인증, 3xxx 배너
     public enum ErrorCode
     {
-        // Common (1xxx)
-        Unknown              = 1000,
-        BadRequest           = 1001,
-        Unauthorized         = 1002,
-        Forbidden            = 1003,
-        PathNotFound             = 1004,
-        Conflict             = 1009,
-        TooManyRequests      = 1010,
-        Internal             = 1500,
-        ServiceUnavailable   = 1503,
+        // Standard HTTP Errors (using actual HTTP status codes)
+        Unknown = 0, // Keep 0 for unknown
+        BadRequest = 400,
+        Unauthorized = 401,
+        Forbidden = 403,
+        PathNotFound = 404,
+        Conflict = 409,
+        TooManyRequests = 429,
+        Internal = 500,
+        ServiceUnavailable = 503,
 
-        // Auth (2xxx)
-        AuthInvalidCredentials = 2001,
-        AuthTokenMissing       = 2002,
-        AuthTokenInvalid       = 2003,
-        AuthTokenExpired       = 2004,
-        AuthRefreshInvalid     = 2010,
-        AuthRefreshExpired     = 2011,
-        AuthRefreshRevoked     = 2012,
+        // Authentication Errors (starting from 600 to avoid conflict with standard HTTP codes)
+        AuthInvalidCredentials = 600,
+        AuthTokenMissing = 601,
+        AuthTokenInvalid = 602,
+        AuthTokenExpired = 603,
+        AuthRefreshInvalid = 604,
+        AuthRefreshExpired = 605,
+        AuthRefreshRevoked = 606,
 
-        // Banner (3xxx)
-        BannerNotFound       = 3004,
-        BannerUpdateFailed   = 3005,
+        // Banner Errors (starting from 610)
+        BannerNotFound = 610,
+        BannerUpdateFailed = 611,
         
-        // Background (4xxx)
-        BackgroundNotFound       = 4004,
-        BackgroundUpdateFailed   = 4005,
+        // Background Errors (starting from 620)
+        BackgroundNotFound = 620,
+        BackgroundUpdateFailed = 621,
         
-        // Policy (5xxx)
-        PolicyNotFound       = 5004,
-        PolicyUpdateFailed   = 5005,
+        // Policy Errors (starting from 630)
+        PolicyNotFound = 630,
+        PolicyUpdateFailed = 631,
         
-        // Policy (6xxx)
-        SnsLinkNotFound       = 6004,
-        SnsLinkUpdateFailed   = 6005,
+        // SnsLink Errors (starting from 640)
+        SnsLinkNotFound = 640,
+        SnsLinkUpdateFailed = 641,
+
+        // Question Categories (starting from 650)
+        QuestionCategoryNotFound = 650,
+        QuestionCategoryCreateFailed = 651,
+        QuestionCategoryUpdateFailed = 652,
+        QuestionCategoryDeleteFailed = 653,
+
+        // Questions (starting from 660)
+        QuestionNotFound = 660,
+        QuestionCreateFailed = 661,
+        QuestionUpdateFailed = 662,
+        QuestionDeleteFailed = 663,
     }
 }

@@ -1,59 +1,49 @@
 using System.Text.Json.Serialization;
+using GalaShow.Common.Errors;
 
 namespace GalaShow.Common.Models
 {
     public class ApiResponse<T>
     {
-        [JsonPropertyName("success")]
-        public bool Success { get; set; }
-
         [JsonPropertyName("status")]
-        public string Status { get; set; } = "200";
+        public string Status { get; set; }
 
         [JsonPropertyName("data")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public T? Data { get; set; }
 
-        [JsonPropertyName("message")]
+        [JsonPropertyName("error")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? Message { get; set; }
+        public ApiError? Error { get; set; }
 
-        [JsonPropertyName("errors")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public List<string>? Errors { get; set; }
-
-        public static ApiResponse<T> SuccessResult(T data, string? message = null, string status = "200")
-            => new() 
-            { 
-                Success = true, 
-                Data = data, 
-                Message = message, 
-                Status = status 
+        public static ApiResponse<T> Success(T data, int statusCode = 200)
+            => new()
+            {
+                Status = statusCode.ToString(),
+                Data = data
             };
         
-        public static ApiResponse<T> ErrorResult(string message, List<string>? errors = null, string status = "400")
-            => new() 
-            { 
-                Success = false, 
-                Message = message, 
-                Errors = errors, 
-                Status = status 
+        public static ApiResponse<object> Success(int statusCode = 200)
+            => new()
+            {
+                Status = statusCode.ToString(),
+                Data = null
             };
 
-        public static ApiResponse<T> NotFoundResult(string message = "Resource not found")
-            => new() 
-            { 
-                Success = false, 
-                Message = message, 
-                Status = "404" 
+        public static ApiResponse<object> Fail(ErrorInfo errorInfo)
+            => new()
+            {
+                Status = errorInfo.Code.ToString(),
+                Error = new ApiError { Code = errorInfo.Code.ToString(), Message = errorInfo.Message }
             };
+    }
 
-        public static ApiResponse<T> ServerErrorResult(string message = "Internal server error")
-            => new() 
-            { 
-                Success = false, 
-                Message = message, 
-                Status = "500" 
-            };
+    public class ApiError
+    {
+        [JsonPropertyName("code")]
+        public string Code { get; set; }
+
+        [JsonPropertyName("message")]
+        public string Message { get; set; }
     }
 }

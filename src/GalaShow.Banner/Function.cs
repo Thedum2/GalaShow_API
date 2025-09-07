@@ -85,7 +85,7 @@ namespace GalaShow.Banner
                 return ErrorResults.Json(ErrorCode.BannerUpdateFailed);
             }
 
-            return Success200<object>(null);
+            return Success200();
         }
         #endregion
 
@@ -105,7 +105,14 @@ namespace GalaShow.Banner
         {
             StatusCode = 200,
             Headers = JsonHeaders(),
-            Body = JsonSerializer.Serialize(ApiResponse<T>.SuccessResult(body))
+            Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
+        };
+
+        private static APIGatewayProxyResponse Success200() => new()
+        {
+            StatusCode = 200,
+            Headers = JsonHeaders(),
+            Body = JsonSerializer.Serialize(ApiResponse<object>.Success())
         };
 
         #endregion

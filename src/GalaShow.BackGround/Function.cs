@@ -106,7 +106,7 @@ namespace GalaShow.BackGround
         {
             StatusCode = 200,
             Headers = JsonHeaders(),
-            Body = JsonSerializer.Serialize(ApiResponse<T>.SuccessResult(body))
+            Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
         };
 
         #endregion

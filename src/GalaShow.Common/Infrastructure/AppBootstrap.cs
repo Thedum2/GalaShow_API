@@ -19,6 +19,8 @@ namespace GalaShow.Common.Infrastructure
             await BannerService.Instance.InitializeAsync();
             await PolicyService.Instance.InitializeAsync();
             await SnsService.Instance.InitializeAsync();
+            await QuestionCategoryService.Instance.InitializeAsync();
+            await QuestionService.Instance.InitializeAsync();
         }
     }
 }

@@ -363,6 +363,166 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /sns-links
             Method: put
+
+  DevQuestionFunction:
+    Condition: IsDev
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Question/GalaShow.Question.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: DevQuestionFunction
+      CodeUri: src/GalaShow.Question/
+      Handler: GalaShow.Question::GalaShow.Question.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetQuestions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions
+            Method: get
+        GetRandomQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions/random
+            Method: get
+        GetQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions/{questionId}
+            Method: get
+        CreateQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions
+            Method: post
+        UpdateQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions/{questionId}
+            Method: put
+        DeleteQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions/{questionId}
+            Method: delete
+        GetCategories:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /question-categories
+            Method: get
+        CreateCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /question-categories
+            Method: post
+        UpdateCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /question-categories/{categoryId}
+            Method: put
+        DeleteCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /question-categories/{categoryId}
+            Method: delete
+        GetQuestionsByCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /question-categories/{categoryId}
+            Method: get
+
+  ProdQuestionFunction:
+    Condition: IsProd
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Question/GalaShow.Question.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: ProdQuestionFunction
+      CodeUri: src/GalaShow.Question/
+      Handler: GalaShow.Question::GalaShow.Question.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetQuestions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions
+            Method: get
+        GetRandomQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions/random
+            Method: get
+        GetQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions/{questionId}
+            Method: get
+        CreateQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions
+            Method: post
+        UpdateQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions/{questionId}
+            Method: put
+        DeleteQuestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions/{questionId}
+            Method: delete
+        GetCategories:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /question-categories
+            Method: get
+        CreateCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /question-categories
+            Method: post
+        UpdateCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /question-categories/{categoryId}
+            Method: put
+        DeleteCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /question-categories/{categoryId}
+            Method: delete
   
   ### Dev Custom Domain
   DevDomain:

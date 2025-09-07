@@ -25,16 +25,23 @@ namespace GalaShow.Common.Auth
             };
         }
 
-        public ClaimsPrincipal ValidateBearer(string? authorization)
+        public ClaimsPrincipal? ValidateBearer(string? authorization)
         {
-            if (string.IsNullOrWhiteSpace(authorization))
-                throw new SecurityTokenException("Missing Authorization header");
+            if (string.IsNullOrWhiteSpace(authorization) || !authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
 
-            if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                throw new SecurityTokenException("Invalid auth scheme");
-
-            var token = authorization["Bearer ".Length..].Trim();
-            return _handler.ValidateToken(token, _tvp, out _);
+            var token = authorization.Substring("Bearer ".Length).Trim();
+            
+            try
+            {
+                return _handler.ValidateToken(token, _tvp, out _);
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
         }
     }
 }

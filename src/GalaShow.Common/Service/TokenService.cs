@@ -73,24 +73,18 @@ namespace GalaShow.Common.Service
             Func<APIGatewayProxyResponse?> onExpired,
             Func<APIGatewayProxyResponse?> onUnauthorized)
         {
-            if (req.Headers is null ||
-                !req.Headers.TryGetValue("Authorization", out var auth) ||
-                string.IsNullOrWhiteSpace(auth))
+            if (req.Headers is null || !req.Headers.TryGetValue("Authorization", out var auth))
+            {
                 return onUnauthorized();
+            }
 
-            try
-            {
-                var user = JwtService.Instance.ValidateBearer(auth);
-                return await next(user);
-            }
-            catch (SecurityTokenExpiredException)
-            {
-                return onExpired();
-            }
-            catch (SecurityTokenException)
+            var user = JwtService.Instance.ValidateBearer(auth);
+            if (user is null)
             {
                 return onUnauthorized();
             }
+
+            return await next(user);
         }
         
         public override void Dispose() => base.Dispose();

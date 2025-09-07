@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -17,7 +18,7 @@ namespace GalaShow.Sns
 {
     public class Function
     {
-        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request,
+        public async Task<APIGatewayProxyResponse?> FunctionHandler(APIGatewayProxyRequest request,
             ILambdaContext context)
         {
             StageResolver.Resolve(request);
@@ -54,13 +55,13 @@ namespace GalaShow.Sns
 
         #region !============================Handlers============================!
 
-        private static async Task<APIGatewayProxyResponse> GetSnsLinks()
+        private static async Task<APIGatewayProxyResponse?> GetSnsLinks()
         {
             var list = await SnsService.Instance.GetAllAsync();
             return Json200(list);
         }
 
-        private static async Task<APIGatewayProxyResponse> UpdateSnsLinks(APIGatewayProxyRequest req)
+        private static async Task<APIGatewayProxyResponse?> UpdateSnsLinks(APIGatewayProxyRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.Body))
                 return ErrorResults.Json(ErrorCode.SnsLinkNotFound);
@@ -92,7 +93,7 @@ namespace GalaShow.Sns
         {
             StatusCode = 200,
             Headers = JsonHeaders(),
-            Body = JsonSerializer.Serialize(ApiResponse<T>.SuccessResult(body))
+            Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
         };
 
         #endregion
