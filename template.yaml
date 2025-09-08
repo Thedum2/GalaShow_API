@@ -29,9 +29,9 @@ Resources:
       Name:      Galashow-dev
       StageName: dev
       Cors:
-        AllowMethods: "'GET,POST,PUT,OPTIONS'"
+        AllowMethods: "'GET,POST,PUT,OPTIONS,DELETE'"
         AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"
+        AllowOrigin: "'http://localhost:5173,http://localhost:3000,https://dev.galashow.xyz'"
 
   ### Prod API (only when StageNameParam=prod)
   ProdApi:
@@ -41,9 +41,9 @@ Resources:
       Name:      Galashow-prod
       StageName: prod
       Cors:
-        AllowMethods: "'GET,POST,PUT,OPTIONS'"
+        AllowMethods: "'GET,POST,PUT,OPTIONS,DELETE'"
         AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"
+        AllowOrigin: "'http://localhost:5173,http://localhost:3000,https://dev.galashow.xyz'"
 
   DevBannerFunction:
     Condition: IsDev
