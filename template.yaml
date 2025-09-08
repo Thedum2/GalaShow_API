@@ -20,18 +20,19 @@ Globals:
     MemorySize: 512
 
 Resources:
-
-  ### Dev API (only when StageNameParam=dev)
+  
+  
   DevApi:
     Condition: IsDev
     Type: AWS::Serverless::Api
     Properties:
-      Name:      Galashow-dev
+      Name: Galashow-dev
       StageName: dev
       Cors:
         AllowMethods: "'GET,POST,PUT,OPTIONS,DELETE'"
-        AllowHeaders: "'Content-Type,Authorization'"
+        AllowHeaders: "'Content-Type,Authorization,X-Requested-With,X-Api-Key'"
         AllowOrigin: "'*'"
+        MaxAge: "'600'"
 
   ### Prod API (only when StageNameParam=prod)
   ProdApi:
@@ -42,8 +43,9 @@ Resources:
       StageName: prod
       Cors:
         AllowMethods: "'GET,POST,PUT,OPTIONS,DELETE'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'http://localhost:5173,http://localhost:3000,https://dev.galashow.xyz'"
+        AllowHeaders: "'Content-Type,Authorization,X-Requested-With,X-Api-Key'"
+        AllowOrigin: "'https://live.galashow.xyz'"
+        MaxAge: "'600'"
 
   DevBannerFunction:
     Condition: IsDev
