@@ -28,13 +28,11 @@ public static class StageResolver
 
         string? stageName = null;
 
-        // 1) API Gateway Stage
         var stageFromContext = req?.RequestContext?.Stage;
         Console.WriteLine("[Resolve] Context Stage = " + stageFromContext);
         if (!string.IsNullOrWhiteSpace(stageFromContext))
             stageName = stageFromContext;
 
-        // 2) Host 헤더
         if (string.IsNullOrWhiteSpace(stageName))
         {
             var fromHost = ResolveFromHost(req?.Headers);
@@ -43,7 +41,6 @@ public static class StageResolver
                 stageName = fromHost;
         }
 
-        // 3) 환경변수
         if (string.IsNullOrWhiteSpace(stageName))
         {
             var fromEnv = ResolveFromEnv();
@@ -52,7 +49,6 @@ public static class StageResolver
                 stageName = fromEnv;
         }
 
-        // 4) Lambda 함수명
         if (string.IsNullOrWhiteSpace(stageName))
         {
             var fromFn = ResolveFromFunctionName();
@@ -132,7 +128,5 @@ public static class StageResolver
 
     public static bool IsDev() => _current == Stage.Dev;
     public static bool IsProd() => _current == Stage.Prod;
-
-    /// <summary>테스트/리셋용: 캐시 초기화</summary>
     public static void Invalidate() => _current = Stage.None;
 }

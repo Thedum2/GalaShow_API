@@ -30,11 +30,11 @@ namespace GalaShow.Common.Models
                 Data = null
             };
 
-        public static ApiResponse<object> Fail(ErrorInfo errorInfo)
+                public static ApiResponse<T> Fail(ErrorInfo errorInfo)
             => new()
             {
-                Status = errorInfo.Code.ToString(),
-                Error = new ApiError { Code = errorInfo.Code.ToString(), Message = errorInfo.Message }
+                Status = ((int)errorInfo.Code).ToString(),
+                Error = new ApiError { Code = ((int)errorInfo.Code).ToString(), Message = errorInfo.Message }
             };
     }
 

@@ -80,8 +80,8 @@ namespace GalaShow.Common.Service
             var choices = req.Choices.Select(c => new Choice { Text = c.Text, ImageUrl = c.ImageUrl }).ToList();
 
             var affectedRows = await _repo.UpdateQuestionAsync(question, choices);
-            if (affectedRows == 0) return null; // Or handle as not found
-
+            if (affectedRows == 0) return null; 
+            
             return await GetQuestionAsync(questionId);
         }
 

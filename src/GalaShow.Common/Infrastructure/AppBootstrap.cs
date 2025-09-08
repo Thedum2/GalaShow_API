@@ -20,7 +20,7 @@ namespace GalaShow.Common.Infrastructure
             await PolicyService.Instance.InitializeAsync();
             await SnsService.Instance.InitializeAsync();
             await QuestionCategoryService.Instance.InitializeAsync();
-            await QuestionService.Instance.InitializeAsync();
+            
         }
     }
 }
