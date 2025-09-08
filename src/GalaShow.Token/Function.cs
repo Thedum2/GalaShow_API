@@ -210,7 +210,6 @@ namespace GalaShow.Token
         private static Dictionary<string, string> JsonHeaders(bool allowCredentials = false) => new()
         {
             ["Content-Type"] = "application/json; charset=utf-8",
-            ["Access-Control-Allow-Origin"] = "*",
             ["Access-Control-Allow-Credentials"] = allowCredentials ? "true" : "false"
         };
 

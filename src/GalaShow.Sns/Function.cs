@@ -80,8 +80,7 @@ namespace GalaShow.Sns
 
         private static Dictionary<string, string> JsonHeaders() => new()
         {
-            ["Content-Type"] = "application/json; charset=utf-8",
-            ["Access-Control-Allow-Origin"] = "*"
+            ["Content-Type"] = "application/json; charset=utf-8"
         };
 
         #endregion

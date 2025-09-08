@@ -211,8 +211,7 @@ namespace GalaShow.Question
         // Common helper methods (kept from GalaShow.Question/Function.cs)
         private static Dictionary<string, string> JsonHeaders() => new()
         {
-            ["Content-Type"] = "application/json; charset=utf-8",
-            ["Access-Control-Allow-Origin"] = "*"
+            ["Content-Type"] = "application/json; charset=utf-8"
         };
 
         private static APIGatewayProxyResponse Success<T>(int statusCode, T? body) => new()
