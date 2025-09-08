@@ -31,7 +31,7 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,OPTIONS,DELETE'"
         AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'http://localhost:5173,http://localhost:3000,https://dev.galashow.xyz'"
+        AllowOrigin: "'*'"
 
   ### Prod API (only when StageNameParam=prod)
   ProdApi:
