@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using GalaShow.Common;
 using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
@@ -92,10 +93,7 @@ namespace GalaShow.Policy
 
         #region !============================Helpers============================!
 
-        private static Dictionary<string, string> JsonHeaders() => new()
-        {
-            ["Content-Type"] = "application/json; charset=utf-8"
-        };
+        private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
 
         #endregion
 

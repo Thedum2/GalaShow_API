@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using GalaShow.Common;
 using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
@@ -85,13 +86,23 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
             }
 
+            if (string.IsNullOrWhiteSpace(dto.Title))
+            {
+                return ErrorResults.Json(ErrorCode.BadRequest, "Title cannot be empty.");
+            }
+
+            if (dto.Choices.Count == 0)
+            {
+                return ErrorResults.Json(ErrorCode.BadRequest, "Choices cannot be empty.");
+            }
+
             var newQuestion = await QuestionService.Instance.CreateQuestionAsync(dto);
             if (newQuestion == null)
             {
                 return ErrorResults.Json(ErrorCode.QuestionCreateFailed);
             }
 
-            return Success(201, newQuestion);
+            return Success(200, newQuestion);
         }
 
         private async Task<APIGatewayProxyResponse?> UpdateQuestion(APIGatewayProxyRequest request)
@@ -105,6 +116,16 @@ namespace GalaShow.Question
             if (dto == null)
             {
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Title))
+            {
+                return ErrorResults.Json(ErrorCode.BadRequest, "Title cannot be empty.");
+            }
+
+            if (dto.Choices == null || dto.Choices.Count == 0)
+            {
+                return ErrorResults.Json(ErrorCode.BadRequest, "Choices cannot be empty.");
             }
 
             var updatedQuestion = await QuestionService.Instance.UpdateQuestionAsync(questionId, dto);
@@ -131,8 +152,7 @@ namespace GalaShow.Question
 
             return new APIGatewayProxyResponse { StatusCode = 204 };
         }
-
-        // Question Category methods (from GalaShow.QuestionCategory/Function.cs)
+        
         private async Task<APIGatewayProxyResponse?> GetCategories()
         {
             var categories = await QuestionCategoryService.Instance.GetCategoriesAsync();
@@ -153,7 +173,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCategoryCreateFailed);
             }
 
-            return Success(201, newCategory);
+            return Success(200, newCategory);
         }
 
         private async Task<APIGatewayProxyResponse?> UpdateCategory(APIGatewayProxyRequest request)
@@ -208,11 +228,7 @@ namespace GalaShow.Question
             return Success(200, questions);
         }
 
-        // Common helper methods (kept from GalaShow.Question/Function.cs)
-        private static Dictionary<string, string> JsonHeaders() => new()
-        {
-            ["Content-Type"] = "application/json; charset=utf-8"
-        };
+        private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
 
         private static APIGatewayProxyResponse Success<T>(int statusCode, T? body) => new()
         {

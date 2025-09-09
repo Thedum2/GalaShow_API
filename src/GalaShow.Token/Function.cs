@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using GalaShow.Common;
 using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
@@ -206,21 +207,15 @@ namespace GalaShow.Token
 
             return "user";
         }
-
-        private static Dictionary<string, string> JsonHeaders(bool allowCredentials = false) => new()
-        {
-            ["Content-Type"] = "application/json; charset=utf-8",
-            ["Access-Control-Allow-Credentials"] = allowCredentials ? "true" : "false"
-        };
-
+        
         #endregion
 
         #region !============================Responses============================!
 
-        private static APIGatewayProxyResponse Success200<T>(T body, bool allowCredentials = false) => new()
+        private static APIGatewayProxyResponse Success200<T>(T body) => new()
         {
             StatusCode = 200,
-            Headers = JsonHeaders(allowCredentials),
+            Headers = ResponseHeaders.Get(),
             Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
         };
 

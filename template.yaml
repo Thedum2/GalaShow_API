@@ -28,11 +28,7 @@ Resources:
     Properties:
       Name: Galashow-dev
       StageName: dev
-      Cors:
-        AllowMethods: "'GET,POST,PUT,OPTIONS,DELETE'"
-        AllowHeaders: "'Content-Type,Authorization,X-Requested-With,X-Api-Key'"
-        AllowOrigin: "'*'"
-        MaxAge: "'600'"
+      
 
   ### Prod API (only when StageNameParam=prod)
   ProdApi:
@@ -41,11 +37,7 @@ Resources:
     Properties:
       Name:      Galashow-prod
       StageName: prod
-      Cors:
-        AllowMethods: "'GET,POST,PUT,OPTIONS,DELETE'"
-        AllowHeaders: "'Content-Type,Authorization,X-Requested-With,X-Api-Key'"
-        AllowOrigin: "'https://live.galashow.xyz'"
-        MaxAge: "'600'"
+      
 
   DevBannerFunction:
     Condition: IsDev
@@ -60,6 +52,9 @@ Resources:
       CodeUri: src/GalaShow.Banner/
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''*''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -89,6 +84,9 @@ Resources:
       CodeUri: src/GalaShow.Banner/
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -118,6 +116,9 @@ Resources:
       CodeUri: src/GalaShow.Token/
       Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''*''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -159,6 +160,9 @@ Resources:
       CodeUri: src/GalaShow.Token/
       Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -202,6 +206,9 @@ Resources:
       CodeUri: src/GalaShow.BackGround/
       Handler: GalaShow.BackGround::GalaShow.BackGround.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''*''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -233,6 +240,9 @@ Resources:
       CodeUri: src/GalaShow.BackGround/
       Handler: GalaShow.BackGround::GalaShow.BackGround.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -262,6 +272,9 @@ Resources:
       CodeUri: src/GalaShow.Policy/
       Handler: GalaShow.Policy::GalaShow.Policy.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''*''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -292,6 +305,9 @@ Resources:
       CodeUri: src/GalaShow.Policy/
       Handler: GalaShow.Policy::GalaShow.Policy.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -321,6 +337,9 @@ Resources:
       CodeUri: src/GalaShow.Sns/
       Handler: GalaShow.Sns::GalaShow.Sns.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''*''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -350,6 +369,9 @@ Resources:
       CodeUri: src/GalaShow.Sns/
       Handler: GalaShow.Sns::GalaShow.Sns.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -379,6 +401,9 @@ Resources:
       CodeUri: src/GalaShow.Question/
       Handler: GalaShow.Question::GalaShow.Question.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''*''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -462,6 +487,9 @@ Resources:
       CodeUri: src/GalaShow.Question/
       Handler: GalaShow.Question::GalaShow.Question.Function::FunctionHandler
       Runtime: dotnet8
+      Environment:
+        Variables:
+          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:

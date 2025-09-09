@@ -14,7 +14,7 @@ namespace GalaShow.Common.Errors
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)errorInfo.Code,
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json; charset=utf-8" } },
+                Headers = ResponseHeaders.Get(),
                 Body = JsonSerializer.Serialize(response)
             };
         }

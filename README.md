@@ -224,7 +224,7 @@ GalaShow API는 JWT(JSON Web Token)를 사용하여 인증합니다. 대부분�
 ```json
 {
   "ok": true,
-  "statusCode": 201,
+  "statusCode": 200,
   "data": {
     "id": 123,
     "categoryId": 101,
