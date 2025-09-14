@@ -54,7 +54,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''*''
+          CORS_ALLOWED_ORIGIN: '*'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -86,7 +86,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
+          CORS_ALLOWED_ORIGIN: 'https://live.galashow.xyz'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -118,7 +118,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''*''
+          CORS_ALLOWED_ORIGIN: '*'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -162,7 +162,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
+          CORS_ALLOWED_ORIGIN: 'https://live.galashow.xyz'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -208,7 +208,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''*''
+          CORS_ALLOWED_ORIGIN: '*'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -242,7 +242,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
+          CORS_ALLOWED_ORIGIN: 'https://live.galashow.xyz'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -274,7 +274,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''*''
+          CORS_ALLOWED_ORIGIN: '*'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -307,7 +307,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
+          CORS_ALLOWED_ORIGIN: 'https://live.galashow.xyz'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -339,7 +339,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''*''
+          CORS_ALLOWED_ORIGIN: '*'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -371,7 +371,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
+          CORS_ALLOWED_ORIGIN: 'https://live.galashow.xyz'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -403,7 +403,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''*''
+          CORS_ALLOWED_ORIGIN: '*'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -489,7 +489,7 @@ Resources:
       Runtime: dotnet8
       Environment:
         Variables:
-          CORS_ALLOWED_ORIGIN: ''https://live.galashow.xyz''
+          CORS_ALLOWED_ORIGIN: 'https://live.galashow.xyz'
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
