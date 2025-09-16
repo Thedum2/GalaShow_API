@@ -29,9 +29,9 @@ Resources:
       Name: Galashow-dev
       StageName: dev
       Cors:
-        AllowMethods: '*'
-        AllowHeaders: '*'
-        AllowOrigin: '*'
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
         AllowCredentials: true
       
 
