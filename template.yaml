@@ -29,8 +29,8 @@ Resources:
       Name: Galashow-dev
       StageName: dev
       Description: "Force new deployment at 2025-09-17"
-      
-
+  
+  
   ### Prod API (only when StageNameParam=prod)
   ProdApi:
     Condition: IsProd
@@ -38,8 +38,8 @@ Resources:
     Properties:
       Name:      Galashow-prod
       StageName: prod
-      
-
+  
+  
   DevBannerFunction:
     Condition: IsDev
     Type: AWS::Serverless::Function
@@ -69,6 +69,18 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /banners/{bannerId}
             Method: put
+        OptionsBanners:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /banners
+            Method: options
+        OptionsBannerId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /banners/{bannerId}
+            Method: options
 
   ProdBannerFunction:
     Condition: IsProd
@@ -98,6 +110,18 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /banners/{bannerId}
             Method: put
+        OptionsBanners:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /banners
+            Method: options
+        OptionsBannerId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /banners/{bannerId}
+            Method: options
 
   DevTokenFunction:
     Condition: IsDev
@@ -140,6 +164,30 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /auth/verify
             Method: get
+        OptionsLogin:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /auth/login
+            Method: options
+        OptionsRefresh:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /auth/refresh
+            Method: options
+        OptionsLogout:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /auth/logout
+            Method: options
+        OptionsVerify:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /auth/verify
+            Method: options
 
   ProdTokenFunction:
     Condition: IsProd
@@ -181,9 +229,33 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /auth/verify
             Method: get
-            
-            
-            
+        OptionsLogin:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /auth/login
+            Method: options
+        OptionsRefresh:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /auth/refresh
+            Method: options
+        OptionsLogout:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /auth/logout
+            Method: options
+        OptionsVerify:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /auth/verify
+            Method: options
+  
+  
+  
   DevBackgroundFunction:
     Condition: IsDev
     Type: AWS::Serverless::Function
@@ -213,9 +285,21 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /background/{backId}
             Method: put
-            
-            
-            
+        OptionsBackground:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /background
+            Method: options
+        OptionsBackgroundId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /background/{backId}
+            Method: options
+  
+  
+  
   ProdBackgroundFunction:
     Condition: IsProd
     Type: AWS::Serverless::Function
@@ -244,6 +328,18 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /background/{backId}
             Method: put
+        OptionsBackground:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /background
+            Method: options
+        OptionsBackgroundId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /background/{backId}
+            Method: options
   
   DevPolicyFunction:
     Condition: IsDev
@@ -274,8 +370,14 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /policies
             Method: put
-            
-            
+        OptionsPolicies:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /policies
+            Method: options
+  
+  
   ProdPolicyFunction:
     Condition: IsProd
     Type: AWS::Serverless::Function
@@ -303,7 +405,13 @@ Resources:
           Properties:
             RestApiId: !Ref ProdApi
             Path: /policies
-            Method: put 
+            Method: put
+        OptionsPolicies:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /policies
+            Method: options
 
   DevSnsFunction:
     Condition: IsDev
@@ -322,18 +430,24 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
-        GetPolicy:
+        GetSnsLinks:
           Type: Api
           Properties:
             RestApiId: !Ref DevApi
             Path: /sns-links
             Method: get
-        UpdatePolicy:
+        UpdateSnsLinks:
           Type: Api
           Properties:
             RestApiId: !Ref DevApi
             Path: /sns-links
             Method: put
+        OptionsSnsLinks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /sns-links
+            Method: options
   
   ProdSnsFunction:
     Condition: IsProd
@@ -351,18 +465,24 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
-        GetPolicy:
+        GetSnsLinks:
           Type: Api
           Properties:
             RestApiId: !Ref ProdApi
             Path: /sns-links
             Method: get
-        UpdatePolicy:
+        UpdateSnsLinks:
           Type: Api
           Properties:
             RestApiId: !Ref ProdApi
             Path: /sns-links
             Method: put
+        OptionsSnsLinks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /sns-links
+            Method: options
 
   DevQuestionFunction:
     Condition: IsDev
@@ -447,6 +567,37 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /question-categories/{categoryId}
             Method: get
+        # OPTIONS 이벤트 추가
+        OptionsQuestions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions
+            Method: options
+        OptionsQuestionsRandom:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions/random
+            Method: options
+        OptionsQuestionId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /questions/{questionId}
+            Method: options
+        OptionsQuestionCategories:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /question-categories
+            Method: options
+        OptionsQuestionCategoryId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /question-categories/{categoryId}
+            Method: options
 
   ProdQuestionFunction:
     Condition: IsProd
@@ -524,6 +675,37 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /question-categories/{categoryId}
             Method: delete
+        # OPTIONS 이벤트 추가
+        OptionsQuestions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions
+            Method: options
+        OptionsQuestionsRandom:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions/random
+            Method: options
+        OptionsQuestionId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /questions/{questionId}
+            Method: options
+        OptionsQuestionCategories:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /question-categories
+            Method: options
+        OptionsQuestionCategoryId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /question-categories/{categoryId}
+            Method: options
   
   ### Dev Custom Domain
   DevDomain:
