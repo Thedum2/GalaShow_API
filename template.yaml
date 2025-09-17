@@ -110,7 +110,7 @@ Resources:
     Properties:
       FunctionName: DevTokenFunction
       CodeUri: src/GalaShow.Token/
-      Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
+      Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
       Runtime: dotnet8
       
       Policies:
@@ -152,7 +152,7 @@ Resources:
     Properties:
       FunctionName: ProdTokenFunction
       CodeUri: src/GalaShow.Token/
-      Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
+      Handler: GalaShow.Banner::GalaShow.Token.Function::FunctionHandler
       Runtime: dotnet8
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
