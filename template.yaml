@@ -28,6 +28,7 @@ Resources:
     Properties:
       Name: Galashow-dev
       StageName: dev
+      Description: "Force new deployment at 2025-09-17"
       
 
   ### Prod API (only when StageNameParam=prod)
