@@ -26,7 +26,7 @@ namespace GalaShow.BackGround
             StageResolver.Resolve(req);
             await AppBootstrap.InitAsync();
 
-            APIGatewayProxyResponse response;
+            APIGatewayProxyResponse? response;
             try
             {
                 response = (req.HttpMethod, req.Path) switch
@@ -40,6 +40,8 @@ namespace GalaShow.BackGround
                             () => ErrorResults.Json(ErrorCode.AuthTokenExpired),
                             () => ErrorResults.Json(ErrorCode.Unauthorized)
                         ),
+
+                    ("OPTIONS", _) => Success200(),
 
                     _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
@@ -58,7 +60,7 @@ namespace GalaShow.BackGround
             return CorsHandler.AddCorsHeaders(req, response!);
         }
 
-        #region !============================Handlers============================!
+        #region !============================ Handlers ============================!
 
         private async Task<APIGatewayProxyResponse> GetAllBackground()
         {
@@ -90,24 +92,27 @@ namespace GalaShow.BackGround
                 return ErrorResults.Json(ErrorCode.BackgroundUpdateFailed);
             }
 
-            return Success200<object>(null);
+            return Success200();
         }
 
         #endregion
 
-        #region !============================Helpers============================!
+        #region !============================ Helpers ============================!
 
         private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
-
-        #endregion
-
-        #region !============================Helpers(Only Success(200))============================!
 
         private static APIGatewayProxyResponse Success200<T>(T body) => new()
         {
             StatusCode = 200,
             Headers = JsonHeaders(),
             Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
+        };
+
+        private static APIGatewayProxyResponse Success200() => new()
+        {
+            StatusCode = 200,
+            Headers = JsonHeaders(),
+            Body = JsonSerializer.Serialize(ApiResponse<object>.Success())
         };
 
         #endregion

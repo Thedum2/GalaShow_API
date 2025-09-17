@@ -44,6 +44,8 @@ namespace GalaShow.Question
                     ("DELETE", var p) when p.StartsWith("/question-categories/") => await TokenService.Instance.RequireAuthThen(req, _ => DeleteCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("GET", var p) when p.StartsWith("/question-categories/") && p.Length > "/question-categories".Length + 1 => await TokenService.Instance.RequireAuthThen(req, _ => GetQuestionsByCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
 
+                    ("OPTIONS", _) => Success200(),
+
                     _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
             }
@@ -58,12 +60,13 @@ namespace GalaShow.Question
             return CorsHandler.AddCorsHeaders(req, response!);
         }
 
-        // Question methods (from GalaShow.Question/Function.cs)
+        #region !============================ Handlers ============================!
+
         private async Task<APIGatewayProxyResponse?> GetRandomQuestions(APIGatewayProxyRequest request)
         {
             var count = request.QueryStringParameters?.TryGetValue("count", out var countStr) == true && int.TryParse(countStr, out var c) ? c : 1;
             var questions = await QuestionService.Instance.GetRandomQuestionsAsync(count);
-            return Success200(200, questions);
+            return Success200(questions);
         }
 
         private async Task<APIGatewayProxyResponse?> GetQuestion(APIGatewayProxyRequest request)
@@ -78,7 +81,7 @@ namespace GalaShow.Question
             {
                 return ErrorResults.Json(ErrorCode.QuestionNotFound);
             }
-            return Success200(200, question);
+            return Success200(question);
         }
 
         private async Task<APIGatewayProxyResponse?> CreateQuestion(APIGatewayProxyRequest request)
@@ -105,7 +108,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCreateFailed);
             }
 
-            return Success200(200, newQuestion);
+            return Success200(newQuestion);
         }
 
         private async Task<APIGatewayProxyResponse?> UpdateQuestion(APIGatewayProxyRequest request)
@@ -137,7 +140,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionUpdateFailed);
             }
 
-            return Success200(200, updatedQuestion);
+            return Success200(updatedQuestion);
         }
 
         private async Task<APIGatewayProxyResponse?> DeleteQuestion(APIGatewayProxyRequest request)
@@ -153,13 +156,13 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionDeleteFailed);
             }
 
-            return Success200<object>(200, null);
+            return Success200();
         }
         
         private async Task<APIGatewayProxyResponse?> GetCategories()
         {
             var categories = await QuestionCategoryService.Instance.GetCategoriesAsync();
-            return Success200(200, categories);
+            return Success200(categories);
         }
 
         private async Task<APIGatewayProxyResponse?> CreateCategory(APIGatewayProxyRequest request)
@@ -176,7 +179,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCategoryCreateFailed);
             }
 
-            return Success200(200, newCategory);
+            return Success200(newCategory);
         }
 
         private async Task<APIGatewayProxyResponse?> UpdateCategory(APIGatewayProxyRequest request)
@@ -198,7 +201,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCategoryUpdateFailed);
             }
 
-            return Success200<object>(200, null);
+            return Success200();
         }
 
         private async Task<APIGatewayProxyResponse?> DeleteCategory(APIGatewayProxyRequest request)
@@ -214,7 +217,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCategoryDeleteFailed);
             }
 
-            return Success200<object>(200, null);
+            return Success200();
         }
 
         private async Task<APIGatewayProxyResponse?> GetQuestionsByCategory(APIGatewayProxyRequest request)
@@ -228,16 +231,29 @@ namespace GalaShow.Question
             var shuffle = request.QueryStringParameters?.TryGetValue("shuffle", out var shuffleStr) == true && bool.TryParse(shuffleStr, out var s) && s;
 
             var questions = await QuestionService.Instance.GetQuestionsByCategoryAsync(categoryId, limit, shuffle);
-            return Success200(200, questions);
+            return Success200(questions);
         }
+
+        #endregion
+
+        #region !============================ Helpers ============================!
 
         private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
 
-        private static APIGatewayProxyResponse Success200<T>(int statusCode, T? body) => new()
+        private static APIGatewayProxyResponse Success200<T>(T body) => new()
         {
-            StatusCode = statusCode,
+            StatusCode = 200,
             Headers = JsonHeaders(),
-            Body = body != null ? JsonSerializer.Serialize(ApiResponse<T>.Success(body, statusCode)) : JsonSerializer.Serialize(ApiResponse<object>.Success(statusCode))
+            Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
         };
+
+        private static APIGatewayProxyResponse Success200() => new()
+        {
+            StatusCode = 200,
+            Headers = JsonHeaders(),
+            Body = JsonSerializer.Serialize(ApiResponse<object>.Success())
+        };
+
+        #endregion
     }
 }

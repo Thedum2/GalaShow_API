@@ -11,7 +11,6 @@ using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
 using GalaShow.Common.Models.Request.Policy;
-using GalaShow.Common.Models.Response.Policy;
 using GalaShow.Common.Service;
 using Microsoft.IdentityModel.Tokens;
 
@@ -42,6 +41,8 @@ namespace GalaShow.Policy
                             ()=> ErrorResults.Json(ErrorCode.Unauthorized)
                         ),
 
+                    ("OPTIONS", _) => Success200(),
+
                     _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
             }
@@ -60,12 +61,12 @@ namespace GalaShow.Policy
         }
 
 
-        #region !============================Handlers============================!
+        #region !============================ Handlers ============================!
 
         private static async Task<APIGatewayProxyResponse?> GetPolicy()
         {
             var data = await PolicyService.Instance.GetAsync();
-            return Json200(data);
+            return Success200(data);
         }
 
         private static async Task<APIGatewayProxyResponse?> UpdatePolicy(APIGatewayProxyRequest req)
@@ -90,23 +91,27 @@ namespace GalaShow.Policy
             }
 
             await PolicyService.Instance.UpdateAsync(tos, pp);
-            return Json200<object?>(null);
+            return Success200();
         }
 
         #endregion
 
-        #region !============================Helpers============================!
+        #region !============================ Helpers ============================!
 
         private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
 
-        #endregion
-
-        #region !============================Helpers(Only Success(200))============================!
-        private static APIGatewayProxyResponse? Json200<T>(T body) => new()
+        private static APIGatewayProxyResponse? Success200<T>(T? body) => new()
         {
             StatusCode = 200,
             Headers = JsonHeaders(),
             Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
+        };
+
+        private static APIGatewayProxyResponse Success200() => new()
+        {
+            StatusCode = 200,
+            Headers = JsonHeaders(),
+            Body = JsonSerializer.Serialize(ApiResponse<object>.Success())
         };
         
         #endregion

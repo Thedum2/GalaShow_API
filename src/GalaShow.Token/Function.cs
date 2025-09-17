@@ -36,6 +36,9 @@ namespace GalaShow.Token
                     ("POST", "/auth/refresh") => await Refresh(req),
                     ("POST", "/auth/logout") => await Logout(req),
                     ("GET", "/auth/verify") => await Verify(req),
+
+                    ("OPTIONS", _) => Success200(),
+
                     _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
             }
@@ -53,7 +56,7 @@ namespace GalaShow.Token
             return CorsHandler.AddCorsHeaders(req, response);
         }
 
-        #region !============================Handlers============================!
+        #region !============================ Handlers ============================!
 
         private static async Task<APIGatewayProxyResponse> Login(APIGatewayProxyRequest req)
         {
@@ -142,18 +145,18 @@ namespace GalaShow.Token
         private static async Task<APIGatewayProxyResponse> Logout(APIGatewayProxyRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.Body))
-                return Success200(new { ok = true });
+                return Success200();
 
             var dto = JsonSerializer.Deserialize<LogoutRequest>(req.Body);
             if (string.IsNullOrWhiteSpace(dto?.RefreshToken))
-                return Success200(new { ok = true });
+                return Success200();
 
             var hash = TokenService.HashRefreshRaw(dto.RefreshToken);
 
             var repo = new TokenRepository();
             await repo.RevokeAsync(hash);
 
-            return Success200(new { ok = true });
+            return Success200();
         }
 
         private static Task<APIGatewayProxyResponse> Verify(APIGatewayProxyRequest req)
@@ -171,7 +174,7 @@ namespace GalaShow.Token
 
         #endregion
 
-        #region !============================Helpers============================!
+        #region !============================ Helpers ============================!
 
         private static (string ua, string ip) GetUaAndIp(APIGatewayProxyRequest req)
         {
@@ -212,15 +215,20 @@ namespace GalaShow.Token
             return "user";
         }
         
-        #endregion
-
-        #region !============================Responses============================!
-
+        private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
+        
         private static APIGatewayProxyResponse Success200<T>(T body) => new()
         {
             StatusCode = 200,
-            Headers = ResponseHeaders.Get(),
+            Headers = JsonHeaders(),
             Body = JsonSerializer.Serialize(ApiResponse<T>.Success(body))
+        };
+
+        private static APIGatewayProxyResponse Success200() => new()
+        {
+            StatusCode = 200,
+            Headers = JsonHeaders(),
+            Body = JsonSerializer.Serialize(ApiResponse<object>.Success())
         };
 
         #endregion

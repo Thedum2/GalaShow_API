@@ -41,6 +41,8 @@ namespace GalaShow.Banner
                             () => ErrorResults.Json(ErrorCode.Unauthorized)
                         ),
 
+                    ("OPTIONS", _) => Success200(),
+
                     _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
             }
@@ -58,7 +60,7 @@ namespace GalaShow.Banner
             return CorsHandler.AddCorsHeaders(req, response);
         }
 
-        #region !============================Handlers============================!
+        #region !============================ Handlers ============================!
 
         private async Task<APIGatewayProxyResponse> GetAllBanners()
         {
@@ -94,14 +96,10 @@ namespace GalaShow.Banner
         }
         #endregion
 
-        #region !============================Helpers============================!
+        #region !============================ Helpers ============================!
 
         private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
         
-        #endregion
-        
-        #region !============================Helpers(Only Success(200))============================!
-
         private static APIGatewayProxyResponse Success200<T>(T body) => new()
         {
             StatusCode = 200,
