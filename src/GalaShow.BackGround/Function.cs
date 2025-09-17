@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using GalaShow.Common;
+using GalaShow.Common.Cors;
 using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
@@ -25,9 +26,10 @@ namespace GalaShow.BackGround
             StageResolver.Resolve(req);
             await AppBootstrap.InitAsync();
 
+            APIGatewayProxyResponse response;
             try
             {
-                return (req.HttpMethod, req.Path) switch
+                response = (req.HttpMethod, req.Path) switch
                 {
                     ("GET", "/background") => await GetAllBackground(),
 
@@ -45,13 +47,15 @@ namespace GalaShow.BackGround
             catch (SecurityTokenException ste)
             {
                 context.Logger.LogError($"Auth error: {ste.Message}");
-                return ErrorResults.Json(ErrorCode.Unauthorized);
+                response = ErrorResults.Json(ErrorCode.Unauthorized);
             }
             catch (Exception ex)
             {
                 context.Logger.LogError($"Error: {ex}");
-                return ErrorResults.Json(ErrorCode.Internal);
+                response = ErrorResults.Json(ErrorCode.Internal);
             }
+
+            return CorsHandler.AddCorsHeaders(req, response!);
         }
 
         #region !============================Handlers============================!
@@ -80,7 +84,7 @@ namespace GalaShow.BackGround
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
             }
 
-            var updated = await BackgroundService.Instance.UpdateBannerAsync(backId, dto.Title, dto.Type, dto.Url);
+            var updated = await BackgroundService.Instance.UpdateBackgroundAsync(backId, dto.Title, dto.Type, dto.Url);
             if (updated == 0)
             {
                 return ErrorResults.Json(ErrorCode.BackgroundUpdateFailed);

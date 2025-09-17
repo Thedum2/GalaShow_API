@@ -7,6 +7,7 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using GalaShow.Common;
 using GalaShow.Common.Errors;
+using GalaShow.Common.Cors;
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
 using GalaShow.Common.Models.Request.Sns;
@@ -25,17 +26,18 @@ namespace GalaShow.Sns
             StageResolver.Resolve(request);
             await AppBootstrap.InitAsync();
 
+            APIGatewayProxyResponse? response;
             try
             {
-                return (request.HttpMethod, request.Path) switch
+                response = (request.HttpMethod, request.Path) switch
                 {
                     ("GET", "/sns-links") => await GetSnsLinks(),
                     ("PUT", "/sns-links") =>
                         await TokenService.Instance.RequireAuthThen(
                             request,
                             _ => UpdateSnsLinks(request),
-                            ()=> ErrorResults.Json(ErrorCode.AuthTokenExpired),
-                            ()=> ErrorResults.Json(ErrorCode.Unauthorized)
+                            () => ErrorResults.Json(ErrorCode.AuthTokenExpired),
+                            () => ErrorResults.Json(ErrorCode.Unauthorized)
                         ),
 
                     _ => ErrorResults.Json(ErrorCode.PathNotFound)
@@ -44,13 +46,21 @@ namespace GalaShow.Sns
             catch (SecurityTokenException ste)
             {
                 context.Logger.LogError($"Auth error: {ste.Message}");
-                return ErrorResults.Json(ErrorCode.Unauthorized);
+                response = ErrorResults.Json(ErrorCode.Unauthorized);
             }
             catch (Exception ex)
             {
                 context.Logger.LogError(ex.ToString());
-                return ErrorResults.Json(ErrorCode.Internal);
+                response = ErrorResults.Json(ErrorCode.Internal);
             }
+
+            if (response is null)
+            {
+                context.Logger.LogError("Response was unexpectedly null.");
+                response = ErrorResults.Json(ErrorCode.Internal, "An unexpected error occurred where the response was null.");
+            }
+
+            return CorsHandler.AddCorsHeaders(request, response);
         }
 
 
@@ -85,8 +95,8 @@ namespace GalaShow.Sns
 
 
         #region !============================Helpers(Only Success(200))============================!
-
-        private static APIGatewayProxyResponse Json200<T>(T body) => new()
+        
+        private static APIGatewayProxyResponse? Json200<T>(T body) => new()
         {
             StatusCode = 200,
             Headers = JsonHeaders(),

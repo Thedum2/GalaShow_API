@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using GalaShow.Common;
+using GalaShow.Common.Cors;
 using GalaShow.Common.Errors;
+
 using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
 using GalaShow.Common.Models.Request.Question;
@@ -24,18 +26,18 @@ namespace GalaShow.Question
             StageResolver.Resolve(req);
             await AppBootstrap.InitAsync();
 
+            APIGatewayProxyResponse? response;
             try
             {
-                return (req.HttpMethod, req.Path) switch
+                response = (req.HttpMethod, req.Path) switch
                 {
-                    // Question routes
+                    
                     ("GET", "/questions/random") => await TokenService.Instance.RequireAuthThen(req, _ => GetRandomQuestions(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("GET", var p) when p.StartsWith("/questions/") => await TokenService.Instance.RequireAuthThen(req, _ => GetQuestion(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("POST", "/questions") => await TokenService.Instance.RequireAuthThen(req, _ => CreateQuestion(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("PUT", var p) when p.StartsWith("/questions/") => await TokenService.Instance.RequireAuthThen(req, _ => UpdateQuestion(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("DELETE", var p) when p.StartsWith("/questions/") => await TokenService.Instance.RequireAuthThen(req, _ => DeleteQuestion(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
-
-                    // Question Category routes
+                    
                     ("GET", "/question-categories") => await TokenService.Instance.RequireAuthThen(req, _ => GetCategories(), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("POST", "/question-categories") => await TokenService.Instance.RequireAuthThen(req, _ => CreateCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("PUT", var p) when p.StartsWith("/question-categories/") => await TokenService.Instance.RequireAuthThen(req, _ => UpdateCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
@@ -45,14 +47,15 @@ namespace GalaShow.Question
                     _ => ErrorResults.Json(ErrorCode.PathNotFound)
                 };
             }
-            catch (SecurityTokenException ste)
+            catch (SecurityTokenException)
             {
-                return ErrorResults.Json(ErrorCode.Unauthorized);
+                response = ErrorResults.Json(ErrorCode.Unauthorized);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return ErrorResults.Json(ErrorCode.Internal);
+                response = ErrorResults.Json(ErrorCode.Internal);
             }
+            return CorsHandler.AddCorsHeaders(req, response!);
         }
 
         // Question methods (from GalaShow.Question/Function.cs)
@@ -60,7 +63,7 @@ namespace GalaShow.Question
         {
             var count = request.QueryStringParameters?.TryGetValue("count", out var countStr) == true && int.TryParse(countStr, out var c) ? c : 1;
             var questions = await QuestionService.Instance.GetRandomQuestionsAsync(count);
-            return Success(200, questions);
+            return Success200(200, questions);
         }
 
         private async Task<APIGatewayProxyResponse?> GetQuestion(APIGatewayProxyRequest request)
@@ -75,7 +78,7 @@ namespace GalaShow.Question
             {
                 return ErrorResults.Json(ErrorCode.QuestionNotFound);
             }
-            return Success(200, question);
+            return Success200(200, question);
         }
 
         private async Task<APIGatewayProxyResponse?> CreateQuestion(APIGatewayProxyRequest request)
@@ -102,7 +105,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCreateFailed);
             }
 
-            return Success(200, newQuestion);
+            return Success200(200, newQuestion);
         }
 
         private async Task<APIGatewayProxyResponse?> UpdateQuestion(APIGatewayProxyRequest request)
@@ -134,7 +137,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionUpdateFailed);
             }
 
-            return Success(200, updatedQuestion);
+            return Success200(200, updatedQuestion);
         }
 
         private async Task<APIGatewayProxyResponse?> DeleteQuestion(APIGatewayProxyRequest request)
@@ -150,13 +153,13 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionDeleteFailed);
             }
 
-            return new APIGatewayProxyResponse { StatusCode = 204 };
+            return Success200<object>(200, null);
         }
         
         private async Task<APIGatewayProxyResponse?> GetCategories()
         {
             var categories = await QuestionCategoryService.Instance.GetCategoriesAsync();
-            return Success(200, categories);
+            return Success200(200, categories);
         }
 
         private async Task<APIGatewayProxyResponse?> CreateCategory(APIGatewayProxyRequest request)
@@ -173,7 +176,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCategoryCreateFailed);
             }
 
-            return Success(200, newCategory);
+            return Success200(200, newCategory);
         }
 
         private async Task<APIGatewayProxyResponse?> UpdateCategory(APIGatewayProxyRequest request)
@@ -195,7 +198,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCategoryUpdateFailed);
             }
 
-            return Success<object>(200, null);
+            return Success200<object>(200, null);
         }
 
         private async Task<APIGatewayProxyResponse?> DeleteCategory(APIGatewayProxyRequest request)
@@ -211,7 +214,7 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionCategoryDeleteFailed);
             }
 
-            return new APIGatewayProxyResponse { StatusCode = 204 };
+            return Success200<object>(200, null);
         }
 
         private async Task<APIGatewayProxyResponse?> GetQuestionsByCategory(APIGatewayProxyRequest request)
@@ -225,12 +228,12 @@ namespace GalaShow.Question
             var shuffle = request.QueryStringParameters?.TryGetValue("shuffle", out var shuffleStr) == true && bool.TryParse(shuffleStr, out var s) && s;
 
             var questions = await QuestionService.Instance.GetQuestionsByCategoryAsync(categoryId, limit, shuffle);
-            return Success(200, questions);
+            return Success200(200, questions);
         }
 
         private static Dictionary<string, string> JsonHeaders() => ResponseHeaders.Get();
 
-        private static APIGatewayProxyResponse Success<T>(int statusCode, T? body) => new()
+        private static APIGatewayProxyResponse Success200<T>(int statusCode, T? body) => new()
         {
             StatusCode = statusCode,
             Headers = JsonHeaders(),

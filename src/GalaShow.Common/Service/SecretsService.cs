@@ -10,6 +10,7 @@ namespace GalaShow.Common.Service
     {
         private IAmazonSecretsManager? _client;
         private static readonly Dictionary<string, DbCredentials> DbCache = new();
+        private static readonly Dictionary<string, List<string>> CorsCache = new();
 
         private SecretsService() { }
 
@@ -35,6 +36,23 @@ namespace GalaShow.Common.Service
                         ?? throw new InvalidOperationException("Failed to deserialize DB credentials");
             DbCache[secretId] = creds;
             return creds;
+        }
+
+        public async Task<List<string>> GetCorsAllowedOriginsAsync(string secretId, string stage)
+        {
+            var cacheKey = $"{secretId}_{stage}";
+            if (CorsCache.TryGetValue(cacheKey, out var cached)) return cached;
+
+            var raw = await GetSecretRawAsync(secretId);
+            using var doc = JsonDocument.Parse(raw);
+            if (doc.RootElement.TryGetProperty(stage, out var originsElement) && originsElement.ValueKind == JsonValueKind.Array)
+            {
+                var origins = originsElement.EnumerateArray().Select(e => e.GetString()!).ToList();
+                CorsCache[cacheKey] = origins;
+                return origins;
+            }
+
+            return new List<string>();
         }
 
         public override void Dispose()

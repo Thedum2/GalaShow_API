@@ -27,7 +27,7 @@ namespace GalaShow.Common.Service
             }).ToList();
         }
 
-        public Task<int> UpdateBannerAsync(int id, string title, string type, string fileUrl)
+        public Task<int> UpdateBackgroundAsync(int id, string title, string type, string fileUrl)
             => _repo.UpdateAsync(id, title, type, fileUrl);
     }
 }
