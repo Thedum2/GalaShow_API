@@ -70,25 +70,26 @@ namespace GalaShow.Common.Repositories
             var affectedRows = 0;
             await DatabaseService.Instance.ExecuteInTransactionAsync(async (conn, transaction) =>
             {
-                // 1. Find all question IDs for the category
                 var questionIds = new List<int>();
                 const string selectQuestionsSql = "SELECT id FROM questions WHERE category_id = @id";
                 var p = new[] { new MySqlParameter("@id", MySqlDbType.Int32) { Value = id } };
-                await using (var reader = await DatabaseService.Instance.ExecuteReaderAsync(selectQuestionsSql, conn, transaction, p))
+                await using (var cmd = new MySqlCommand(selectQuestionsSql, conn, transaction))
                 {
-                    while (await reader.ReadAsync())
+                    cmd.Parameters.AddRange(p);
+                    await using (var reader = await cmd.ExecuteReaderAsync())
                     {
-                        questionIds.Add(reader.GetInt32("id"));
+                        while (await reader.ReadAsync())
+                        {
+                            questionIds.Add(reader.GetInt32("id"));
+                        }
                     }
                 }
 
                 if (questionIds.Any())
                 {
-                    // 2. Delete all choices for those questions
                     var deleteChoicesSql = $"DELETE FROM choices WHERE question_id IN ({string.Join(",", questionIds)})";
                     await DatabaseService.Instance.ExecuteNonQueryAsync(deleteChoicesSql, conn, transaction);
 
-                    // 3. Delete all questions in the category
                     const string deleteQuestionsSql = "DELETE FROM questions WHERE category_id = @id";
                     await DatabaseService.Instance.ExecuteNonQueryAsync(deleteQuestionsSql, conn, transaction, p);
                 }
