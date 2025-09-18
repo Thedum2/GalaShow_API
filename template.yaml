@@ -46,7 +46,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Banner/GalaShow.Banner.csproj
+        ProjectFile: GalaShow.Banner.csproj
         Framework: net8.0
     Properties:
       FunctionName: DevBannerFunction
@@ -88,7 +88,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Banner/GalaShow.Banner.csproj
+        ProjectFile: GalaShow.Banner.csproj
         Framework: net8.0
     Properties:
       FunctionName: ProdBannerFunction
@@ -129,7 +129,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Token/GalaShow.Token.csproj
+        ProjectFile: GalaShow.Token.csproj
         Framework: net8.0
     Properties:
       FunctionName: DevTokenFunction
@@ -195,12 +195,12 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Token/GalaShow.Token.csproj
+        ProjectFile: GalaShow.Token.csproj
         Framework: net8.0
     Properties:
       FunctionName: ProdTokenFunction
       CodeUri: src/GalaShow.Token/
-      Handler: GalaShow.Banner::GalaShow.Token.Function::FunctionHandler
+      Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
       Runtime: dotnet8
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
@@ -262,7 +262,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.BackGround/GalaShow.BackGround.csproj
+        ProjectFile: GalaShow.BackGround.csproj
         Framework: net8.0
     Properties:
       FunctionName: DevBackgroundFunction
@@ -306,7 +306,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.BackGround/GalaShow.BackGround.csproj
+        ProjectFile: GalaShow.BackGround.csproj
         Framework: net8.0
     Properties:
       FunctionName: ProdBackgroundFunction
@@ -347,7 +347,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Policy/GalaShow.Policy.csproj
+        ProjectFile: GalaShow.Policy.csproj
         Framework: net8.0
     Properties:
       FunctionName: DevPolicyFunction
@@ -384,7 +384,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Policy/GalaShow.Policy.csproj
+        ProjectFile: GalaShow.Policy.csproj
         Framework: net8.0
     Properties:
       FunctionName: ProdPolicyFunction
@@ -419,7 +419,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Sns/GalaShow.Sns.csproj
+        ProjectFile: GalaShow.Sns.csproj
         Framework: net8.0
     Properties:
       FunctionName: DevSnsFunction
@@ -455,7 +455,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Sns/GalaShow.Sns.csproj
+        ProjectFile: GalaShow.Sns.csproj
         Framework: net8.0
     Properties:
       FunctionName: ProdSnsFunction
@@ -490,7 +490,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Question/GalaShow.Question.csproj
+        ProjectFile: GalaShow.Question.csproj
         Framework: net8.0
     Properties:
       FunctionName: DevQuestionFunction
@@ -605,7 +605,7 @@ Resources:
     Metadata:
       BuildMethod: dotnet8
       BuildProperties:
-        ProjectFile: GalaShow.Question/GalaShow.Question.csproj
+        ProjectFile: GalaShow.Question.csproj
         Framework: net8.0
     Properties:
       FunctionName: ProdQuestionFunction

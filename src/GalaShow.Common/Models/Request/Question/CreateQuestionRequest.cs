@@ -6,7 +6,7 @@ namespace GalaShow.Common.Models.Request.Question
 {
     public class CreateQuestionRequest
     {
-        [JsonPropertyName("category_id")]
+        [JsonPropertyName("categoryId")]
         public int CategoryId { get; set; }
 
         [JsonPropertyName("title")]
@@ -23,7 +23,7 @@ namespace GalaShow.Common.Models.Request.Question
         [JsonPropertyName("text")]
         public string Text { get; set; }
 
-        [JsonPropertyName("image_url")]
+        [JsonPropertyName("imageUrl")]
         public string? ImageUrl { get; set; }
     }
 }

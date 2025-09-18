@@ -19,6 +19,18 @@ namespace GalaShow.Common.Service
             return Task.CompletedTask;
         }
 
+        public async Task<QuestionCategoryResponse?> GetCategoryByIdAsync(int id)
+        {
+            var category = await _repo.GetByIdAsync(id);
+            if (category == null) return null;
+
+            return new QuestionCategoryResponse
+            {
+                Id = category.Id,
+                Name = category.Name
+            };
+        }
+
         public async Task<List<QuestionCategoryResponse>> GetCategoriesAsync()
         {
             var categories = await _repo.GetAllAsync();

@@ -40,9 +40,9 @@ namespace GalaShow.Question
                     
                     ("GET", "/question-categories") => await TokenService.Instance.RequireAuthThen(req, _ => GetCategories(), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
                     ("POST", "/question-categories") => await TokenService.Instance.RequireAuthThen(req, _ => CreateCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
-                    ("PUT", var p) when p.StartsWith("/question-categories/") => await TokenService.Instance.RequireAuthThen(req, _ => UpdateCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
-                    ("DELETE", var p) when p.StartsWith("/question-categories/") => await TokenService.Instance.RequireAuthThen(req, _ => DeleteCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
-                    ("GET", var p) when p.StartsWith("/question-categories/") && p.Length > "/question-categories".Length + 1 => await TokenService.Instance.RequireAuthThen(req, _ => GetQuestionsByCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
+                    ("PUT", var p) when p.StartsWith("/question-categories/") && p.Length > "/question-categories/".Length => await TokenService.Instance.RequireAuthThen(req, _ => UpdateCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
+                    ("DELETE", var p) when p.StartsWith("/question-categories/") && p.Length > "/question-categories/".Length => await TokenService.Instance.RequireAuthThen(req, _ => DeleteCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
+                    ("GET", var p) when p.StartsWith("/question-categories/") && p.Length > "/question-categories/".Length => await TokenService.Instance.RequireAuthThen(req, _ => GetQuestionsByCategory(req), () => ErrorResults.Json(ErrorCode.AuthTokenExpired), () => ErrorResults.Json(ErrorCode.Unauthorized)),
 
                     ("OPTIONS", _) => Success200(),
 
@@ -60,7 +60,7 @@ namespace GalaShow.Question
             return CorsHandler.AddCorsHeaders(req, response!);
         }
 
-        #region !============================ Handlers ============================!
+          #region !============================ Handlers ============================!
 
         private async Task<APIGatewayProxyResponse?> GetRandomQuestions(APIGatewayProxyRequest request)
         {
@@ -92,6 +92,12 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
             }
 
+            var category = await QuestionCategoryService.Instance.GetCategoryByIdAsync(dto.CategoryId);
+            if (category == null)
+            {
+                return ErrorResults.Json(ErrorCode.QuestionCategoryNotFound);
+            }
+
             if (string.IsNullOrWhiteSpace(dto.Title))
             {
                 return ErrorResults.Json(ErrorCode.BadRequest, "Title cannot be empty.");
@@ -118,10 +124,22 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid question ID");
             }
 
+            var question = await QuestionService.Instance.GetQuestionAsync(questionId);
+            if (question == null)
+            {
+                return ErrorResults.Json(ErrorCode.QuestionNotFound);
+            }
+
             var dto = JsonSerializer.Deserialize<UpdateQuestionRequest>(request.Body);
             if (dto == null)
             {
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
+            }
+
+            var category = await QuestionCategoryService.Instance.GetCategoryByIdAsync(dto.CategoryId);
+            if (category == null)
+            {
+                return ErrorResults.Json(ErrorCode.QuestionCategoryNotFound);
             }
 
             if (string.IsNullOrWhiteSpace(dto.Title))
@@ -148,6 +166,12 @@ namespace GalaShow.Question
             if (request.PathParameters == null || !request.PathParameters.TryGetValue("questionId", out var idStr) || !int.TryParse(idStr, out var questionId))
             {
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid question ID");
+            }
+
+            var question = await QuestionService.Instance.GetQuestionAsync(questionId);
+            if (question == null)
+            {
+                return ErrorResults.Json(ErrorCode.QuestionNotFound);
             }
 
             var deleted = await QuestionService.Instance.DeleteQuestionAsync(questionId);
@@ -189,6 +213,12 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid category ID");
             }
 
+            var category = await QuestionCategoryService.Instance.GetCategoryByIdAsync(categoryId);
+            if (category == null)
+            {
+                return ErrorResults.Json(ErrorCode.QuestionCategoryNotFound);
+            }
+
             var dto = JsonSerializer.Deserialize<UpdateQuestionCategoryRequest>(request.Body);
             if (dto == null || string.IsNullOrWhiteSpace(dto.Name))
             {
@@ -211,6 +241,12 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid category ID");
             }
 
+            var category = await QuestionCategoryService.Instance.GetCategoryByIdAsync(categoryId);
+            if (category == null)
+            {
+                return ErrorResults.Json(ErrorCode.QuestionCategoryNotFound);
+            }
+
             var deleted = await QuestionCategoryService.Instance.DeleteCategoryAsync(categoryId);
             if (deleted == 0)
             {
@@ -225,6 +261,12 @@ namespace GalaShow.Question
             if (request.PathParameters == null || !request.PathParameters.TryGetValue("categoryId", out var idStr) || !int.TryParse(idStr, out var categoryId))
             {
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid category ID");
+            }
+
+            var category = await QuestionCategoryService.Instance.GetCategoryByIdAsync(categoryId);
+            if (category == null)
+            {
+                return ErrorResults.Json(ErrorCode.QuestionCategoryNotFound);
             }
 
             var limit = request.QueryStringParameters?.TryGetValue("limit", out var limitStr) == true && int.TryParse(limitStr, out var l) ? l : 10;
