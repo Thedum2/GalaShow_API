@@ -162,9 +162,16 @@ namespace GalaShow.Common.Repositories
 
         public async Task<int> DeleteAsync(int id)
         {
-            const string sql = "DELETE FROM questions WHERE id = @id";
-            var p = new[] { new MySqlParameter("@id", MySqlDbType.Int32) { Value = id } };
-            return await DatabaseService.Instance.ExecuteNonQueryAsync(sql, p);
+            var affectedRows = 0;
+            await DatabaseService.Instance.ExecuteInTransactionAsync(async (conn, transaction) =>
+            {
+                await DeleteChoicesByQuestionIdAsync(id, conn, transaction);
+
+                const string sql = "DELETE FROM questions WHERE id = @id";
+                var p = new[] { new MySqlParameter("@id", MySqlDbType.Int32) { Value = id } };
+                affectedRows = await DatabaseService.Instance.ExecuteNonQueryAsync(sql, conn, transaction, p);
+            });
+            return affectedRows;
         }
     }
 }

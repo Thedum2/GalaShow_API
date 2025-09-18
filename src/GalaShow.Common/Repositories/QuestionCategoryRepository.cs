@@ -67,9 +67,37 @@ namespace GalaShow.Common.Repositories
 
         public async Task<int> DeleteAsync(int id)
         {
-            const string sql = "DELETE FROM question_categories WHERE id = @id";
-            var p = new[] { new MySqlParameter("@id", MySqlDbType.Int32) { Value = id } };
-            return await DatabaseService.Instance.ExecuteNonQueryAsync(sql, p);
+            var affectedRows = 0;
+            await DatabaseService.Instance.ExecuteInTransactionAsync(async (conn, transaction) =>
+            {
+                // 1. Find all question IDs for the category
+                var questionIds = new List<int>();
+                const string selectQuestionsSql = "SELECT id FROM questions WHERE category_id = @id";
+                var p = new[] { new MySqlParameter("@id", MySqlDbType.Int32) { Value = id } };
+                await using (var reader = await DatabaseService.Instance.ExecuteReaderAsync(selectQuestionsSql, conn, transaction, p))
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        questionIds.Add(reader.GetInt32("id"));
+                    }
+                }
+
+                if (questionIds.Any())
+                {
+                    // 2. Delete all choices for those questions
+                    var deleteChoicesSql = $"DELETE FROM choices WHERE question_id IN ({string.Join(",", questionIds)})";
+                    await DatabaseService.Instance.ExecuteNonQueryAsync(deleteChoicesSql, conn, transaction);
+
+                    // 3. Delete all questions in the category
+                    const string deleteQuestionsSql = "DELETE FROM questions WHERE category_id = @id";
+                    await DatabaseService.Instance.ExecuteNonQueryAsync(deleteQuestionsSql, conn, transaction, p);
+                }
+
+                // 4. Delete the category itself
+                const string deleteCategorySql = "DELETE FROM question_categories WHERE id = @id";
+                affectedRows = await DatabaseService.Instance.ExecuteNonQueryAsync(deleteCategorySql, conn, transaction, p);
+            });
+            return affectedRows;
         }
     }
 }
