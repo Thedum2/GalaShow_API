@@ -44,6 +44,8 @@ namespace GalaShow.Common.Errors
             [ErrorCode.QuestionCreateFailed] = new(ErrorCode.QuestionCreateFailed, "Failed to create question"),
             [ErrorCode.QuestionUpdateFailed] = new(ErrorCode.QuestionUpdateFailed, "Failed to update question"),
             [ErrorCode.QuestionDeleteFailed] = new(ErrorCode.QuestionDeleteFailed, "Failed to delete question"),
+            
+            [ErrorCode.InvalidChoiceCount] = new(ErrorCode.InvalidChoiceCount, "Choices must be between 2 and 4."),
         };
 
         public static ErrorInfo Get(ErrorCode code, string? msgOverride = null)

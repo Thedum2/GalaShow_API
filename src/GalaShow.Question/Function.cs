@@ -97,9 +97,9 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.BadRequest, "Title cannot be empty.");
             }
 
-            if (dto.Choices.Count == 0)
+            if (dto.Choices.Count < 2 || dto.Choices.Count > 4)
             {
-                return ErrorResults.Json(ErrorCode.BadRequest, "Choices cannot be empty.");
+                return ErrorResults.Json(ErrorCode.InvalidChoiceCount);
             }
 
             var newQuestion = await QuestionService.Instance.CreateQuestionAsync(dto);
@@ -129,9 +129,9 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.BadRequest, "Title cannot be empty.");
             }
 
-            if (dto.Choices == null || dto.Choices.Count == 0)
+            if (dto.Choices.Count < 2 || dto.Choices.Count > 4)
             {
-                return ErrorResults.Json(ErrorCode.BadRequest, "Choices cannot be empty.");
+                return ErrorResults.Json(ErrorCode.InvalidChoiceCount);
             }
 
             var updatedQuestion = await QuestionService.Instance.UpdateQuestionAsync(questionId, dto);

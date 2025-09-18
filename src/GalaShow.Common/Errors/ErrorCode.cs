@@ -42,5 +42,7 @@ namespace GalaShow.Common.Errors
         QuestionCreateFailed = 661,
         QuestionUpdateFailed = 662,
         QuestionDeleteFailed = 663,
+        
+        InvalidChoiceCount = 664,
     }
 }
