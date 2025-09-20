@@ -6,9 +6,6 @@ namespace GalaShow.Common.Models.Request.Question
 {
     public class UpdateQuestionRequest
     {
-        [JsonPropertyName("category_id")]
-        public int CategoryId { get; set; }
-
         [JsonPropertyName("title")]
         public string Title { get; set; }
 

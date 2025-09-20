@@ -119,10 +119,9 @@ namespace GalaShow.Common.Repositories
             var affectedRows = 0;
             await DatabaseService.Instance.ExecuteInTransactionAsync(async (conn, transaction) =>
             {
-                var questionSql = "UPDATE questions SET category_id = @categoryId, title = @title, updated_at = NOW() WHERE id = @id";
+                var questionSql = "UPDATE questions SET title = @title, updated_at = NOW() WHERE id = @id";
                 var questionParams = new[]
                 {
-                    new MySqlParameter("@categoryId", MySqlDbType.Int32) { Value = question.CategoryId },
                     new MySqlParameter("@title", MySqlDbType.VarChar) { Value = question.Title },
                     new MySqlParameter("@id", MySqlDbType.Int32) { Value = question.Id }
                 };

@@ -130,23 +130,16 @@ namespace GalaShow.Question
                 return ErrorResults.Json(ErrorCode.QuestionNotFound);
             }
 
-            var dto = JsonSerializer.Deserialize<UpdateQuestionRequest>(request.Body);
-            if (dto == null)
-            {
-                return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
-            }
-
-            var category = await QuestionCategoryService.Instance.GetCategoryByIdAsync(dto.CategoryId);
-            if (category == null)
-            {
-                return ErrorResults.Json(ErrorCode.QuestionCategoryNotFound);
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.Title))
-            {
-                return ErrorResults.Json(ErrorCode.BadRequest, "Title cannot be empty.");
-            }
-
+                        var dto = JsonSerializer.Deserialize<UpdateQuestionRequest>(request.Body);
+                        if (dto == null)
+                        {
+                            return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
+                        }
+            
+                        if (string.IsNullOrWhiteSpace(dto.Title))
+                        {
+                            return ErrorResults.Json(ErrorCode.BadRequest, "Title cannot be empty.");
+                        }
             if (dto.Choices.Count < 2 || dto.Choices.Count > 4)
             {
                 return ErrorResults.Json(ErrorCode.InvalidChoiceCount);

@@ -76,7 +76,7 @@ namespace GalaShow.Common.Service
 
         public async Task<QuestionResponse?> UpdateQuestionAsync(int questionId, UpdateQuestionRequest req)
         {
-            var question = new Question { Id = questionId, CategoryId = req.CategoryId, Title = req.Title };
+            var question = new Question { Id = questionId, Title = req.Title };
             var choices = req.Choices.Select(c => new Choice { Text = c.Text, ImageUrl = c.ImageUrl }).ToList();
 
             var affectedRows = await _repo.UpdateQuestionAsync(question, choices);
