@@ -7,7 +7,7 @@ namespace GalaShow.Common.Models.Response.Question
         [JsonPropertyName("text")]
         public string Text { get; set; }
 
-        [JsonPropertyName("image_url")]
+        [JsonPropertyName("imageUrl")]
         public string? ImageUrl { get; set; }
     }
 }

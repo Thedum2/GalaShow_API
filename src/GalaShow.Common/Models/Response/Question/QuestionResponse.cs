@@ -8,7 +8,7 @@ namespace GalaShow.Common.Models.Response.Question
         [JsonPropertyName("id")]
         public int Id { get; set; }
 
-        [JsonPropertyName("category_id")]
+        [JsonPropertyName("categoryId")]
         public int CategoryId { get; set; }
 
         [JsonPropertyName("title")]
