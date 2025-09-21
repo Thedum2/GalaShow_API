@@ -73,7 +73,7 @@ namespace GalaShow.Common.Repositories
 
         public async Task<List<Choice>> GetChoicesByQuestionIdAsync(int questionId)
         {
-            const string sql = "SELECT id, question_id, text, image_url FROM choices WHERE question_id = @questionId";
+            const string sql = "SELECT id, question_id, text, image_url FROM choices WHERE question_id = @questionId ORDER BY id ASC";
             var choices = new List<Choice>();
             var p = new[] { new MySqlParameter("@questionId", MySqlDbType.Int32) { Value = questionId } };
 
