@@ -32,7 +32,7 @@ namespace GalaShow.Common.Service
                     Id = q.Id,
                     CategoryId = q.CategoryId,
                     Title = q.Title,
-                    Choices = choices.Select(c => new ChoiceResponse { ChoiceId = c.Id, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
+                    Choices = choices.Select((c, i) => new ChoiceResponse { ChoiceId = i, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
                 });
             }
             return response;
@@ -49,7 +49,7 @@ namespace GalaShow.Common.Service
                 Id = q.Id,
                 CategoryId = q.CategoryId,
                 Title = q.Title,
-                Choices = choices.Select(c => new ChoiceResponse { ChoiceId = c.Id, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
+                Choices = choices.Select((c, i) => new ChoiceResponse { ChoiceId = i, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
             };
         }
 
