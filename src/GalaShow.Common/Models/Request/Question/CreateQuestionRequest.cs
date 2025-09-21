@@ -20,6 +20,9 @@ namespace GalaShow.Common.Models.Request.Question
 
     public class CreateChoiceRequest
     {
+        [JsonPropertyName("choiceId")]
+        public int ChoiceId { get; set; }
+
         [JsonPropertyName("text")]
         public string Text { get; set; }
 

@@ -73,7 +73,7 @@ namespace GalaShow.Common.Repositories
 
         public async Task<List<Choice>> GetChoicesByQuestionIdAsync(int questionId)
         {
-            const string sql = "SELECT id, question_id, text, image_url FROM choices WHERE question_id = @questionId ORDER BY id ASC";
+            const string sql = "SELECT id, choice_id, question_id, text, image_url FROM choices WHERE question_id = @questionId ORDER BY choice_id ASC";
             var choices = new List<Choice>();
             var p = new[] { new MySqlParameter("@questionId", MySqlDbType.Int32) { Value = questionId } };
 
@@ -83,6 +83,7 @@ namespace GalaShow.Common.Repositories
                 choices.Add(new Choice
                 {
                     Id = reader.GetInt32("id"),
+                    ChoiceId = reader.GetInt32("choice_id"),
                     QuestionId = reader.GetInt32("question_id"),
                     Text = reader.GetString("text"),
                     ImageUrl = reader.IsDBNull("image_url") ? null : reader.GetString("image_url")
@@ -129,7 +130,7 @@ namespace GalaShow.Common.Repositories
 
                 await DeleteChoicesByQuestionIdAsync(question.Id, conn, transaction);
                 
-                if (choices != null && choices.Any())
+                if (choices.Any())
                 {
                     await CreateChoicesAsync(question.Id, choices, conn, transaction);
                 }
@@ -139,12 +140,13 @@ namespace GalaShow.Common.Repositories
 
         private async Task CreateChoicesAsync(int questionId, List<Choice> choices, MySqlConnection conn, MySqlTransaction tr)
         {
-            var choiceSql = "INSERT INTO choices (question_id, text, image_url) VALUES (@questionId, @text, @imageUrl)";
+            var choiceSql = "INSERT INTO choices (question_id, choice_id, text, image_url) VALUES (@questionId, @choiceId, @text, @imageUrl)";
             foreach (var choice in choices)
             {
                 var choiceParams = new[]
                 {
                     new MySqlParameter("@questionId", MySqlDbType.Int32) { Value = questionId },
+                    new MySqlParameter("@choiceId", MySqlDbType.Int32) { Value = choice.ChoiceId },
                     new MySqlParameter("@text", MySqlDbType.VarChar) { Value = choice.Text },
                     new MySqlParameter("@imageUrl", MySqlDbType.VarChar) { Value = (object)choice.ImageUrl ?? System.DBNull.Value }
                 };

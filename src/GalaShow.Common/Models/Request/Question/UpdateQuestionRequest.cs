@@ -17,6 +17,9 @@ namespace GalaShow.Common.Models.Request.Question
 
     public class UpdateChoiceRequest
     {
+        [JsonPropertyName("choiceId")]
+        public int ChoiceId { get; set; }
+
         [JsonPropertyName("text")]
         public string Text { get; set; }
 

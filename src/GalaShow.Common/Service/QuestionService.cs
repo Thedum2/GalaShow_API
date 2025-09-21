@@ -32,7 +32,7 @@ namespace GalaShow.Common.Service
                     Id = q.Id,
                     CategoryId = q.CategoryId,
                     Title = q.Title,
-                    Choices = choices.Select((c, i) => new ChoiceResponse { ChoiceId = i, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
+                    Choices = choices.Select(c => new ChoiceResponse { ChoiceId = c.ChoiceId, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
                 });
             }
             return response;
@@ -49,7 +49,7 @@ namespace GalaShow.Common.Service
                 Id = q.Id,
                 CategoryId = q.CategoryId,
                 Title = q.Title,
-                Choices = choices.Select((c, i) => new ChoiceResponse { ChoiceId = i, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
+                Choices = choices.Select(c => new ChoiceResponse { ChoiceId = c.ChoiceId, Text = c.Text, ImageUrl = c.ImageUrl }).ToList()
             };
         }
 
@@ -66,7 +66,7 @@ namespace GalaShow.Common.Service
         public async Task<QuestionResponse?> CreateQuestionAsync(CreateQuestionRequest req)
         {
             var question = new Question { CategoryId = req.CategoryId, Title = req.Title };
-            var choices = req.Choices.Select(c => new Choice { Text = c.Text, ImageUrl = c.ImageUrl }).ToList();
+            var choices = req.Choices.Select(c => new Choice { ChoiceId = c.ChoiceId, Text = c.Text, ImageUrl = c.ImageUrl }).ToList();
             
             var newQuestionId = await _repo.CreateQuestionAsync(question, choices);
             if (newQuestionId == 0) return null;
@@ -77,7 +77,7 @@ namespace GalaShow.Common.Service
         public async Task<QuestionResponse?> UpdateQuestionAsync(int questionId, UpdateQuestionRequest req)
         {
             var question = new Question { Id = questionId, Title = req.Title };
-            var choices = req.Choices.Select(c => new Choice { Text = c.Text, ImageUrl = c.ImageUrl }).ToList();
+            var choices = req.Choices.Select(c => new Choice { ChoiceId = c.ChoiceId, Text = c.Text, ImageUrl = c.ImageUrl }).ToList();
 
             var affectedRows = await _repo.UpdateQuestionAsync(question, choices);
             if (affectedRows == 0) return null; 
