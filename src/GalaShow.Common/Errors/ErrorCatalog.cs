@@ -15,6 +15,7 @@ namespace GalaShow.Common.Errors
             [ErrorCode.Internal]             = new(ErrorCode.Internal, "Internal server error"),
             [ErrorCode.ServiceUnavailable]   = new(ErrorCode.ServiceUnavailable, "Service unavailable"),
 
+            //Auth
             [ErrorCode.AuthInvalidCredentials] = new(ErrorCode.AuthInvalidCredentials, "Invalid credentials"),
             [ErrorCode.AuthTokenMissing]       = new(ErrorCode.AuthTokenMissing, "Missing access token"),
             [ErrorCode.AuthTokenInvalid]       = new(ErrorCode.AuthTokenInvalid, "Invalid access token"),
@@ -34,18 +35,6 @@ namespace GalaShow.Common.Errors
             
             [ErrorCode.SnsLinkNotFound]         = new(ErrorCode.PolicyNotFound, "SnsLinkNotFound not found"),
             [ErrorCode.SnsLinkUpdateFailed]     = new(ErrorCode.PolicyUpdateFailed, "Failed to update SnsLinkNotFound"),
-
-            [ErrorCode.QuestionCategoryNotFound]    = new(ErrorCode.QuestionCategoryNotFound, "Question category not found"),
-            [ErrorCode.QuestionCategoryCreateFailed] = new(ErrorCode.QuestionCategoryCreateFailed, "Failed to create question category"),
-            [ErrorCode.QuestionCategoryUpdateFailed] = new(ErrorCode.QuestionCategoryUpdateFailed, "Failed to update question category"),
-            [ErrorCode.QuestionCategoryDeleteFailed] = new(ErrorCode.QuestionCategoryDeleteFailed, "Failed to delete question category"),
-
-            [ErrorCode.QuestionNotFound]    = new(ErrorCode.QuestionNotFound, "Question not found"),
-            [ErrorCode.QuestionCreateFailed] = new(ErrorCode.QuestionCreateFailed, "Failed to create question"),
-            [ErrorCode.QuestionUpdateFailed] = new(ErrorCode.QuestionUpdateFailed, "Failed to update question"),
-            [ErrorCode.QuestionDeleteFailed] = new(ErrorCode.QuestionDeleteFailed, "Failed to delete question"),
-            
-            [ErrorCode.InvalidChoiceCount] = new(ErrorCode.InvalidChoiceCount, "Choices must be between 2 and 4."),
         };
 
         public static ErrorInfo Get(ErrorCode code, string? msgOverride = null)

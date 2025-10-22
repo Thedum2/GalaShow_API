@@ -32,17 +32,5 @@ namespace GalaShow.Common.Errors
         
         SnsLinkNotFound = 640,
         SnsLinkUpdateFailed = 641,
-
-        QuestionCategoryNotFound = 650,
-        QuestionCategoryCreateFailed = 651,
-        QuestionCategoryUpdateFailed = 652,
-        QuestionCategoryDeleteFailed = 653,
-
-        QuestionNotFound = 660,
-        QuestionCreateFailed = 661,
-        QuestionUpdateFailed = 662,
-        QuestionDeleteFailed = 663,
-        
-        InvalidChoiceCount = 664,
     }
 }
