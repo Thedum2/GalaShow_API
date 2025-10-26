@@ -426,7 +426,7 @@ Resources:
       CodeUri: src/GalaShow.Sns/
       Handler: GalaShow.Sns::GalaShow.Sns.Function::FunctionHandler
       Runtime: dotnet8
-      
+
       Policies:
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
@@ -448,6 +448,34 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /sns-links
             Method: options
+
+  DevChzzkProxyFunction:
+    Condition: IsDev
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.ChzzkProxy.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: DevChzzkProxyFunction
+      CodeUri: src/GalaShow.ChzzkProxy/
+      Handler: GalaShow.ChzzkProxy::GalaShow.ChzzkProxy.Function::FunctionHandler
+      Runtime: dotnet8
+      Timeout: 30
+      Events:
+        ChzzkProxyRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /chzzk
+            Method: ANY
+        ChzzkProxyGreedy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /chzzk/{proxy+}
+            Method: ANY
   
   ProdSnsFunction:
     Condition: IsProd
@@ -483,6 +511,34 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /sns-links
             Method: options
+
+  ProdChzzkProxyFunction:
+    Condition: IsProd
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.ChzzkProxy.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: ProdChzzkProxyFunction
+      CodeUri: src/GalaShow.ChzzkProxy/
+      Handler: GalaShow.ChzzkProxy::GalaShow.ChzzkProxy.Function::FunctionHandler
+      Runtime: dotnet8
+      Timeout: 30
+      Events:
+        ChzzkProxyRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /chzzk
+            Method: ANY
+        ChzzkProxyGreedy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /chzzk/{proxy+}
+            Method: ANY
 
   ### Dev Custom Domain
   DevDomain:

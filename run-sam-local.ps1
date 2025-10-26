@@ -28,6 +28,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # 3. SAM 로컬 API 시작
 Write-Host "`n[3/3] Starting SAM local API (StageNameParam=$Stage)..."
+docker pull public.ecr.aws/lambda/dotnet:8
 sam local start-api --parameter-overrides "StageNameParam=$Stage"
 
 # (끝)
