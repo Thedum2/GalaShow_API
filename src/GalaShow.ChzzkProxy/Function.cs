@@ -35,7 +35,7 @@ namespace GalaShow.ChzzkProxy
                 var path = request.Path ?? "/";
                 if (path.StartsWith("/chzzk", StringComparison.OrdinalIgnoreCase))
                 {
-                    path = path.Substring(6); // "/chzzk" 길이만큼 제거
+                    path = path.Substring(6);
                 }
                 if (string.IsNullOrEmpty(path))
                 {
@@ -60,19 +60,24 @@ namespace GalaShow.ChzzkProxy
                     Method = new HttpMethod(request.HttpMethod),
                     RequestUri = new Uri(targetUrl)
                 };
+                
+                var contentType = "application/json";
+                if (request.Headers != null && request.Headers.TryGetValue("Content-Type", out var requestContentType))
+                {
+                    contentType = requestContentType;
+                }
 
                 if (!string.IsNullOrEmpty(request.Body))
                 {
-                    httpRequest.Content = new StringContent(request.Body, Encoding.UTF8);
+                    httpRequest.Content = new StringContent(request.Body, Encoding.UTF8, contentType);
                 }
 
-                // 헤더 그대로 전달 (Host, Content-Length 제외)
                 if (request.Headers != null)
                 {
                     foreach (var header in request.Headers)
                     {
                         var headerKey = header.Key.ToLower();
-                        if (headerKey == "host" || headerKey == "content-length")
+                        if (headerKey == "host" || headerKey == "content-length" || headerKey == "content-type")
                             continue;
 
                         httpRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
