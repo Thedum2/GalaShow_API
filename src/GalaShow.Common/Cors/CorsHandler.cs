@@ -16,13 +16,13 @@ public static class CorsHandler
 
     public static APIGatewayProxyResponse? AddCorsHeaders(APIGatewayProxyRequest request, APIGatewayProxyResponse? response)
     {
-        var origin = request.Headers.TryGetValue("origin", out var originHeader) ? originHeader : "";
+        var origin = request.Headers.FirstOrDefault(h => h.Key.Equals("origin", StringComparison.OrdinalIgnoreCase)).Value ?? "";
 
         if (_allowedOrigins.Contains(origin))
         {
             response.Headers["Access-Control-Allow-Origin"] = origin;
             response.Headers["Access-Control-Allow-Credentials"] = "true";
-            response.Headers["Access-Control-Allow-Headers"] = "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token";
+            response.Headers["Access-Control-Allow-Headers"] = "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Client-Id,Client-Secret";
             response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
         }
 

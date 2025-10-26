@@ -82,7 +82,8 @@ namespace GalaShow.ChzzkProxy
                     foreach (var header in request.Headers)
                     {
                         var headerKey = header.Key.ToLower();
-                        if (headerKey == "host" || headerKey == "content-length" || headerKey == "content-type")
+                        if (headerKey == "host" || headerKey == "content-length" || headerKey == "content-type" ||
+                            headerKey == "origin" || headerKey == "referer")
                             continue;
 
                         httpRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
@@ -94,10 +95,32 @@ namespace GalaShow.ChzzkProxy
 
                 context.Logger.LogInformation($"Response status: {(int)chzzkResponse.StatusCode}");
 
+                // API의 응답 헤더를 가져옴 (hop-by-hop 헤더는 제외)
+                var responseHeaders = new Dictionary<string, string>();
+                foreach (var header in chzzkResponse.Headers)
+                {
+                    var headerKey = header.Key.ToLower();
+                    if (headerKey == "transfer-encoding" || headerKey == "connection" ||
+                        headerKey == "keep-alive" || headerKey == "proxy-authenticate" ||
+                        headerKey == "proxy-authorization" || headerKey == "te" ||
+                        headerKey == "trailers" || headerKey == "upgrade")
+                        continue;
+
+                    responseHeaders[header.Key] = string.Join(", ", header.Value);
+                }
+                foreach (var header in chzzkResponse.Content.Headers)
+                {
+                    var headerKey = header.Key.ToLower();
+                    if (headerKey == "content-length")
+                        continue;
+
+                    responseHeaders[header.Key] = string.Join(", ", header.Value);
+                }
+
                 response = new APIGatewayProxyResponse
                 {
                     StatusCode = (int)chzzkResponse.StatusCode,
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } },
+                    Headers = responseHeaders,
                     Body = responseBody
                 };
             }
