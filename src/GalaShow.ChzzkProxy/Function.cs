@@ -27,7 +27,7 @@ namespace GalaShow.ChzzkProxy
             
             if (request.HttpMethod == "OPTIONS")
             {
-                return Success200();
+                return CorsHandler.AddCorsHeaders(request, Success200());
             }
 
             try
