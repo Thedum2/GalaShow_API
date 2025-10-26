@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using GalaShow.Common;
+using GalaShow.Common.Configuration;
 using GalaShow.Common.Cors;
 using GalaShow.Common.Errors;
+using GalaShow.Common.Infrastructure;
 using GalaShow.Common.Models;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -23,8 +25,11 @@ namespace GalaShow.ChzzkProxy
 
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
         {
+            StageResolver.Resolve(request);
+            await AppBootstrap.InitAsync();
+
             APIGatewayProxyResponse response;
-            
+
             if (request.HttpMethod == "OPTIONS")
             {
                 return CorsHandler.AddCorsHeaders(request, Success200());
