@@ -66,15 +66,19 @@ namespace GalaShow.ChzzkProxy
                     RequestUri = new Uri(targetUrl)
                 };
                 
-                var contentType = "application/json";
-                if (request.Headers != null && request.Headers.TryGetValue("Content-Type", out var requestContentType))
-                {
-                    contentType = requestContentType;
-                }
-
                 if (!string.IsNullOrEmpty(request.Body))
                 {
-                    httpRequest.Content = new StringContent(request.Body, Encoding.UTF8, contentType);
+                    var bodyBytes = Encoding.UTF8.GetBytes(request.Body);
+                    httpRequest.Content = new ByteArrayContent(bodyBytes);
+
+                    if (request.Headers != null && request.Headers.TryGetValue("Content-Type", out var requestContentType))
+                    {
+                        httpRequest.Content.Headers.TryAddWithoutValidation("Content-Type", requestContentType);
+                    }
+                    else
+                    {
+                        httpRequest.Content.Headers.TryAddWithoutValidation("Content-Type", "application/json");
+                    }
                 }
 
                 if (request.Headers != null)
