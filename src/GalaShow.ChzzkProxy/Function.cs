@@ -60,27 +60,6 @@ namespace GalaShow.ChzzkProxy
 
                 context.Logger.LogInformation($"Proxying request to: {targetUrl}");
 
-                // 디버깅: 모든 헤더 로깅
-                if (request.Headers != null)
-                {
-                    context.Logger.LogInformation($"Headers count: {request.Headers.Count}");
-                    foreach (var h in request.Headers)
-                    {
-                        context.Logger.LogInformation($"Header: {h.Key} = {h.Value}");
-                    }
-                }
-                if (request.MultiValueHeaders != null)
-                {
-                    context.Logger.LogInformation($"MultiValueHeaders count: {request.MultiValueHeaders.Count}");
-                    foreach (var h in request.MultiValueHeaders)
-                    {
-                        context.Logger.LogInformation($"MultiValueHeader: {h.Key} = {string.Join(", ", h.Value)}");
-                    }
-                }
-
-                var contentTypeHeader = request.Headers?.ContainsKey("Content-Type") == true ? request.Headers["Content-Type"] : "none";
-                context.Logger.LogInformation($"IsBase64Encoded: {request.IsBase64Encoded}, Content-Type: {contentTypeHeader}, Body length: {request.Body?.Length ?? 0}");
-
                 var httpRequest = new HttpRequestMessage
                 {
                     Method = new HttpMethod(request.HttpMethod),
@@ -94,12 +73,10 @@ namespace GalaShow.ChzzkProxy
                     if (request.IsBase64Encoded)
                     {
                         bodyBytes = Convert.FromBase64String(request.Body);
-                        context.Logger.LogInformation($"Decoded base64 body to {bodyBytes.Length} bytes");
                     }
                     else
                     {
                         bodyBytes = Encoding.UTF8.GetBytes(request.Body);
-                        context.Logger.LogInformation($"UTF8 encoded body to {bodyBytes.Length} bytes");
                     }
 
                     httpRequest.Content = new ByteArrayContent(bodyBytes);
@@ -127,12 +104,10 @@ namespace GalaShow.ChzzkProxy
                     if (!string.IsNullOrEmpty(requestContentType))
                     {
                         httpRequest.Content.Headers.TryAddWithoutValidation("Content-Type", requestContentType);
-                        context.Logger.LogInformation($"Set Content-Type: {requestContentType}");
                     }
                     else
                     {
                         httpRequest.Content.Headers.TryAddWithoutValidation("Content-Type", "application/json");
-                        context.Logger.LogInformation("Set default Content-Type: application/json");
                     }
                 }
 
