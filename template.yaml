@@ -463,6 +463,8 @@ Resources:
       Handler: GalaShow.ChzzkProxy::GalaShow.ChzzkProxy.Function::FunctionHandler
       Runtime: dotnet8
       Timeout: 30
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
         ChzzkProxyRoot:
           Type: Api
@@ -526,6 +528,8 @@ Resources:
       Handler: GalaShow.ChzzkProxy::GalaShow.ChzzkProxy.Function::FunctionHandler
       Runtime: dotnet8
       Timeout: 30
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       Events:
         ChzzkProxyRoot:
           Type: Api
