@@ -60,7 +60,24 @@ namespace GalaShow.ChzzkProxy
 
                 context.Logger.LogInformation($"Proxying request to: {targetUrl}");
 
-                // 디버깅: 요청 정보 로깅
+                // 디버깅: 모든 헤더 로깅
+                if (request.Headers != null)
+                {
+                    context.Logger.LogInformation($"Headers count: {request.Headers.Count}");
+                    foreach (var h in request.Headers)
+                    {
+                        context.Logger.LogInformation($"Header: {h.Key} = {h.Value}");
+                    }
+                }
+                if (request.MultiValueHeaders != null)
+                {
+                    context.Logger.LogInformation($"MultiValueHeaders count: {request.MultiValueHeaders.Count}");
+                    foreach (var h in request.MultiValueHeaders)
+                    {
+                        context.Logger.LogInformation($"MultiValueHeader: {h.Key} = {string.Join(", ", h.Value)}");
+                    }
+                }
+
                 var contentTypeHeader = request.Headers?.ContainsKey("Content-Type") == true ? request.Headers["Content-Type"] : "none";
                 context.Logger.LogInformation($"IsBase64Encoded: {request.IsBase64Encoded}, Content-Type: {contentTypeHeader}, Body length: {request.Body?.Length ?? 0}");
 
@@ -87,7 +104,27 @@ namespace GalaShow.ChzzkProxy
 
                     httpRequest.Content = new ByteArrayContent(bodyBytes);
 
-                    if (request.Headers != null && request.Headers.TryGetValue("Content-Type", out var requestContentType))
+                    // Content-Type을 Headers 또는 MultiValueHeaders에서 찾기
+                    string requestContentType = null;
+
+                    if (request.Headers != null && request.Headers.TryGetValue("Content-Type", out var ct))
+                    {
+                        requestContentType = ct;
+                    }
+                    else if (request.Headers != null && request.Headers.TryGetValue("content-type", out var ctLower))
+                    {
+                        requestContentType = ctLower;
+                    }
+                    else if (request.MultiValueHeaders != null && request.MultiValueHeaders.TryGetValue("Content-Type", out var mvCt))
+                    {
+                        requestContentType = string.Join(", ", mvCt);
+                    }
+                    else if (request.MultiValueHeaders != null && request.MultiValueHeaders.TryGetValue("content-type", out var mvCtLower))
+                    {
+                        requestContentType = string.Join(", ", mvCtLower);
+                    }
+
+                    if (!string.IsNullOrEmpty(requestContentType))
                     {
                         httpRequest.Content.Headers.TryAddWithoutValidation("Content-Type", requestContentType);
                         context.Logger.LogInformation($"Set Content-Type: {requestContentType}");
