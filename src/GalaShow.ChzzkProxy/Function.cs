@@ -68,7 +68,17 @@ namespace GalaShow.ChzzkProxy
                 
                 if (!string.IsNullOrEmpty(request.Body))
                 {
-                    var bodyBytes = Encoding.UTF8.GetBytes(request.Body);
+                    // API Gateway가 바이너리 데이터를 base64로 인코딩했는지 확인
+                    byte[] bodyBytes;
+                    if (request.IsBase64Encoded)
+                    {
+                        bodyBytes = Convert.FromBase64String(request.Body);
+                    }
+                    else
+                    {
+                        bodyBytes = Encoding.UTF8.GetBytes(request.Body);
+                    }
+
                     httpRequest.Content = new ByteArrayContent(bodyBytes);
 
                     if (request.Headers != null && request.Headers.TryGetValue("Content-Type", out var requestContentType))

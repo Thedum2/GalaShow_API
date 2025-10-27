@@ -29,6 +29,9 @@ Resources:
       Name: Galashow-dev
       StageName: dev
       Description: "Force new deployment at 2025-09-17"
+      BinaryMediaTypes:
+        - "multipart/form-data"
+        - "multipart/*"
   
   
   ### Prod API (only when StageNameParam=prod)
@@ -38,6 +41,9 @@ Resources:
     Properties:
       Name:      Galashow-prod
       StageName: prod
+      BinaryMediaTypes:
+        - "multipart/form-data"
+        - "multipart/*"
   
   
   DevBannerFunction:
