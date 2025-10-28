@@ -8,13 +8,15 @@ namespace GalaShow.Common.Service
 {
     public sealed class SnsService : AsyncSingleton<SnsService>
     {
+        private readonly SnsLinkRepository _repo = new();
+
         private SnsService() { }
+
         protected override Task InitializeCoreAsync() => Task.CompletedTask;
 
         public async Task<List<SnsLinkResponse>> GetAllAsync()
         {
-            var repo = new SnsLinkRepository(DatabaseService.Instance);
-            var rows = await repo.GetAllAsync();
+            var rows = await _repo.GetAllAsync();
             return rows.Select(x => new SnsLinkResponse
             {
                 Title = x.Title,
@@ -44,8 +46,7 @@ namespace GalaShow.Common.Service
             if (normalized.Any(n => string.IsNullOrWhiteSpace(n.Title) || string.IsNullOrWhiteSpace(n.Url)))
                 throw new ArgumentException("title and url are required for all items");
 
-            var repo = new SnsLinkRepository(DatabaseService.Instance);
-            return await repo.ReplaceAllAsync(normalized);
+            return await _repo.ReplaceAllAsync(normalized);
         }
     }
 }

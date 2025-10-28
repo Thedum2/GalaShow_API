@@ -100,15 +100,8 @@ namespace GalaShow.Token
 
         private static async Task<APIGatewayProxyResponse> Refresh(APIGatewayProxyRequest req)
         {
-            Console.WriteLine("[Refresh] Starting refresh token flow");
-
             if (string.IsNullOrWhiteSpace(req.Body))
-            {
-                Console.WriteLine("[Refresh] Request body is empty");
                 return ErrorResults.Json(ErrorCode.Unauthorized);
-            }
-
-            Console.WriteLine($"[Refresh] Request body: {req.Body}");
 
             var options = new JsonSerializerOptions
             {
@@ -116,56 +109,30 @@ namespace GalaShow.Token
             };
             var dto = JsonSerializer.Deserialize<RefreshRequest>(req.Body, options);
 
-            Console.WriteLine($"[Refresh] Deserialized DTO - RefreshToken: {dto?.RefreshToken ?? "null"}");
-
             if (string.IsNullOrWhiteSpace(dto?.RefreshToken))
-            {
-                Console.WriteLine("[Refresh] RefreshToken is null or empty");
                 return ErrorResults.Json(ErrorCode.Unauthorized);
-            }
 
-            Console.WriteLine($"[Refresh] Received refresh token (length: {dto.RefreshToken.Length})");
             var hash = TokenService.HashRefreshRaw(dto.RefreshToken);
-            Console.WriteLine($"[Refresh] Token hash: {hash}");
 
             var repo = new TokenRepository();
             var rec = await repo.GetByHashAsync(hash);
 
             if (rec is null)
-            {
-                Console.WriteLine("[Refresh] Token not found in database");
                 return ErrorResults.Json(ErrorCode.AuthRefreshInvalid);
-            }
-
-            Console.WriteLine($"[Refresh] Token found - UserId: {rec.UserId}, ExpiresAt: {rec.ExpiresAt:O}, RevokedAt: {rec.RevokedAt?.ToString("O") ?? "null"}");
 
             if (rec.RevokedAt.HasValue)
-            {
-                Console.WriteLine("[Refresh] Token already revoked");
                 return ErrorResults.Json(ErrorCode.AuthRefreshRevoked);
-            }
 
             if (rec.ExpiresAt <= DateTime.UtcNow)
-            {
-                Console.WriteLine($"[Refresh] Token expired. ExpiresAt: {rec.ExpiresAt:O}, Now: {DateTime.UtcNow:O}");
                 return ErrorResults.Json(ErrorCode.AuthRefreshExpired);
-            }
 
-            Console.WriteLine("[Refresh] Revoking old token");
             await repo.RevokeAsync(hash);
 
-            Console.WriteLine("[Refresh] Resolving user role");
             var role = await ResolveRoleAsync(rec.UserId);
-            Console.WriteLine($"[Refresh] Role resolved: {role}");
-
-            Console.WriteLine("[Refresh] Issuing new access token");
             var access = TokenService.Instance.IssueAccessToken(rec.UserId, role);
-
-            Console.WriteLine("[Refresh] Creating new refresh token");
             var (newRaw, newHash, newExpUtc) = TokenService.Instance.CreateRefreshToken();
 
             var (ua, ip) = GetUaAndIp(req);
-            Console.WriteLine("[Refresh] Inserting new refresh token into database");
             await repo.InsertAsync(rec.UserId, newHash, newExpUtc, ua, ip);
 
             var handler = new JwtSecurityTokenHandler();
@@ -187,7 +154,6 @@ namespace GalaShow.Token
                 User = new RefreshResponse.UserPayload { Id = rec.UserId, Role = role }
             };
 
-            Console.WriteLine("[Refresh] Successfully completed refresh token flow");
             return Success200(resp);
         }
 

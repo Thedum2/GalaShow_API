@@ -6,14 +6,15 @@ namespace GalaShow.Common.Service
 {
     public sealed class PolicyService : AsyncSingleton<PolicyService>
     {
+        private readonly PolicyRepository _repo = new();
+
         private PolicyService() { }
 
         protected override Task InitializeCoreAsync() => Task.CompletedTask;
 
         public async Task<PolicyResponse> GetAsync()
         {
-            var repo = new PolicyRepository(DatabaseService.Instance);
-            var row = await repo.GetLatestAsync();
+            var row = await _repo.GetLatestAsync();
             return new PolicyResponse
             {
                 TermsOfService = row?.TermsOfServiceUrl ?? string.Empty,
@@ -21,10 +22,7 @@ namespace GalaShow.Common.Service
             };
         }
 
-        public async Task<int> UpdateAsync(string tosUrl, string ppUrl)
-        {
-            var repo = new PolicyRepository(DatabaseService.Instance);
-            return await repo.UpsertSingletonAsync(tosUrl, ppUrl);
-        }
+        public Task<int> UpdateAsync(string tosUrl, string ppUrl)
+            => _repo.UpsertSingletonAsync(tosUrl, ppUrl);
     }
 }

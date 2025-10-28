@@ -7,17 +7,10 @@ namespace GalaShow.Common.Repositories
 {
     public class PolicyRepository
     {
-        private readonly DatabaseService _db;
-
-        public PolicyRepository(DatabaseService db)
-        {
-            _db = db;
-        }
-
         public async Task<Policy?> GetLatestAsync()
         {
             const string sql = @"SELECT id, terms_of_service_url, privacy_policy_url, created_at, updated_at FROM policies ORDER BY id DESC LIMIT 1";
-            await using var reader = await _db.ExecuteReaderAsync(sql);
+            await using var reader = await DatabaseService.Instance.ExecuteReaderAsync(sql);
             if (!await reader.ReadAsync()) return null;
 
             return new Policy
@@ -40,11 +33,11 @@ namespace GalaShow.Common.Repositories
                 new MySqlParameter("@pp",  MySqlDbType.VarChar){ Value = ppUrl  },
             };
 
-            var affected = await _db.ExecuteNonQueryAsync(updateSql, p);
+            var affected = await DatabaseService.Instance.ExecuteNonQueryAsync(updateSql, p);
             if (affected > 0) return affected;
 
             const string insertSql = @"INSERT INTO policies (terms_of_service_url, privacy_policy_url, created_at, updated_at) VALUES (@tos, @pp, NOW(), NOW())";
-            return await _db.ExecuteNonQueryAsync(insertSql, p);
+            return await DatabaseService.Instance.ExecuteNonQueryAsync(insertSql, p);
         }
     }
 }

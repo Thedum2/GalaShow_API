@@ -7,13 +7,6 @@ namespace GalaShow.Common.Repositories
 {
     public class SnsLinkRepository
     {
-        private readonly DatabaseService _db;
-
-        public SnsLinkRepository(DatabaseService db)
-        {
-            _db = db;
-        }
-
         public async Task<List<SnsLink>> GetAllAsync()
         {
             const string sql = @"
@@ -21,7 +14,7 @@ namespace GalaShow.Common.Repositories
                 FROM sns_links
                 ORDER BY `order` ASC, id ASC;";
             var list = new List<SnsLink>();
-            await using var reader = await _db.ExecuteReaderAsync(sql);
+            await using var reader = await DatabaseService.Instance.ExecuteReaderAsync(sql);
             while (await reader.ReadAsync())
             {
                 list.Add(new SnsLink
@@ -37,11 +30,11 @@ namespace GalaShow.Common.Repositories
             }
             return list;
         }
-        
+
         public async Task<int> ReplaceAllAsync(IEnumerable<SnsLink> items)
         {
             const string deleteSql = "DELETE FROM sns_links;";
-            await _db.ExecuteNonQueryAsync(deleteSql);
+            await DatabaseService.Instance.ExecuteNonQueryAsync(deleteSql);
 
             const string insertSql = @"
                 INSERT INTO sns_links (id, title, url, icon_url, `order`, created_at, updated_at)
@@ -58,7 +51,7 @@ namespace GalaShow.Common.Repositories
                     new MySqlParameter("@icon_url",  MySqlDbType.Text)   { Value = s.IconUrl  },
                     new MySqlParameter("@order", MySqlDbType.Int32)  { Value = s.Order },
                 };
-                affected += await _db.ExecuteNonQueryAsync(insertSql, p);
+                affected += await DatabaseService.Instance.ExecuteNonQueryAsync(insertSql, p);
             }
             return affected;
         }
