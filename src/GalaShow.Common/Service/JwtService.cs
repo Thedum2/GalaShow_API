@@ -48,10 +48,6 @@ namespace GalaShow.Common.Service
 
         public string IssueAccessToken(string sub, string role, int minutes) => Creator.IssueAccessToken(sub, role, minutes);
 
-        public string IssueCustomToken(IEnumerable<Claim> claims, TimeSpan lifetime, string? issuerOverride = null, string? audienceOverride = null) => Creator.IssueToken(claims, lifetime, issuerOverride, audienceOverride);
-
-        public ClaimsPrincipal? ValidateBearer(string? authorization) => Validator.ValidateBearer(authorization);
-
-        public override void Dispose() => base.Dispose();
+        public (JwtValidationResult result, ClaimsPrincipal? principal) ValidateBearer(string? authorization) => Validator.ValidateBearerDetailed(authorization);
     }
 }

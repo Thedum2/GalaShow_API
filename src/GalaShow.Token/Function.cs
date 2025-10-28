@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using GalaShow.Common;
+using GalaShow.Common.Auth;
 using GalaShow.Common.Cors;
 using GalaShow.Common.Errors;
 using GalaShow.Common.Infrastructure;
@@ -60,14 +61,14 @@ namespace GalaShow.Token
 
         private static async Task<APIGatewayProxyResponse> Login(APIGatewayProxyRequest req)
         {
-            if (string.IsNullOrWhiteSpace(req.Body)) return ErrorResults.Json(ErrorCode.Unauthorized);
+            if (string.IsNullOrWhiteSpace(req.Body)) return ErrorResults.Json(ErrorCode.BadRequest);
 
             var dto = JsonSerializer.Deserialize<LoginRequest>(req.Body);
             if (dto is null || string.IsNullOrWhiteSpace(dto.Id) || string.IsNullOrWhiteSpace(dto.Password))
-                return ErrorResults.Json(ErrorCode.Unauthorized);
+                return ErrorResults.Json(ErrorCode.BadRequest);
 
             var (ok, role) = await TokenService.Instance.ValidateCredentialAsync(dto.Id, dto.Password);
-            if (!ok) return ErrorResults.Json(ErrorCode.Unauthorized);
+            if (!ok) return ErrorResults.Json(ErrorCode.AuthInvalidCredentials);
 
             var access = TokenService.Instance.IssueAccessToken(dto.Id, role);
             var (raw, hash, refreshExpUtc) = TokenService.Instance.CreateRefreshToken();
@@ -99,26 +100,72 @@ namespace GalaShow.Token
 
         private static async Task<APIGatewayProxyResponse> Refresh(APIGatewayProxyRequest req)
         {
-            if (string.IsNullOrWhiteSpace(req.Body)) return ErrorResults.Json(ErrorCode.Unauthorized);
-            var dto = JsonSerializer.Deserialize<RefreshRequest>(req.Body);
-            if (string.IsNullOrWhiteSpace(dto?.RefreshToken)) return ErrorResults.Json(ErrorCode.Unauthorized);
+            Console.WriteLine("[Refresh] Starting refresh token flow");
 
+            if (string.IsNullOrWhiteSpace(req.Body))
+            {
+                Console.WriteLine("[Refresh] Request body is empty");
+                return ErrorResults.Json(ErrorCode.Unauthorized);
+            }
+
+            Console.WriteLine($"[Refresh] Request body: {req.Body}");
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var dto = JsonSerializer.Deserialize<RefreshRequest>(req.Body, options);
+
+            Console.WriteLine($"[Refresh] Deserialized DTO - RefreshToken: {dto?.RefreshToken ?? "null"}");
+
+            if (string.IsNullOrWhiteSpace(dto?.RefreshToken))
+            {
+                Console.WriteLine("[Refresh] RefreshToken is null or empty");
+                return ErrorResults.Json(ErrorCode.Unauthorized);
+            }
+
+            Console.WriteLine($"[Refresh] Received refresh token (length: {dto.RefreshToken.Length})");
             var hash = TokenService.HashRefreshRaw(dto.RefreshToken);
+            Console.WriteLine($"[Refresh] Token hash: {hash}");
 
             var repo = new TokenRepository();
             var rec = await repo.GetByHashAsync(hash);
-            if (rec is null) return ErrorResults.Json(ErrorCode.Unauthorized);
-            if (rec.RevokedAt.HasValue) return ErrorResults.Json(ErrorCode.Unauthorized);
-            if (rec.ExpiresAt <= DateTime.UtcNow) return ErrorResults.Json(ErrorCode.Unauthorized);
 
+            if (rec is null)
+            {
+                Console.WriteLine("[Refresh] Token not found in database");
+                return ErrorResults.Json(ErrorCode.AuthRefreshInvalid);
+            }
+
+            Console.WriteLine($"[Refresh] Token found - UserId: {rec.UserId}, ExpiresAt: {rec.ExpiresAt:O}, RevokedAt: {rec.RevokedAt?.ToString("O") ?? "null"}");
+
+            if (rec.RevokedAt.HasValue)
+            {
+                Console.WriteLine("[Refresh] Token already revoked");
+                return ErrorResults.Json(ErrorCode.AuthRefreshRevoked);
+            }
+
+            if (rec.ExpiresAt <= DateTime.UtcNow)
+            {
+                Console.WriteLine($"[Refresh] Token expired. ExpiresAt: {rec.ExpiresAt:O}, Now: {DateTime.UtcNow:O}");
+                return ErrorResults.Json(ErrorCode.AuthRefreshExpired);
+            }
+
+            Console.WriteLine("[Refresh] Revoking old token");
             await repo.RevokeAsync(hash);
 
+            Console.WriteLine("[Refresh] Resolving user role");
             var role = await ResolveRoleAsync(rec.UserId);
+            Console.WriteLine($"[Refresh] Role resolved: {role}");
 
+            Console.WriteLine("[Refresh] Issuing new access token");
             var access = TokenService.Instance.IssueAccessToken(rec.UserId, role);
+
+            Console.WriteLine("[Refresh] Creating new refresh token");
             var (newRaw, newHash, newExpUtc) = TokenService.Instance.CreateRefreshToken();
 
             var (ua, ip) = GetUaAndIp(req);
+            Console.WriteLine("[Refresh] Inserting new refresh token into database");
             await repo.InsertAsync(rec.UserId, newHash, newExpUtc, ua, ip);
 
             var handler = new JwtSecurityTokenHandler();
@@ -139,6 +186,8 @@ namespace GalaShow.Token
 
                 User = new RefreshResponse.UserPayload { Id = rec.UserId, Role = role }
             };
+
+            Console.WriteLine("[Refresh] Successfully completed refresh token flow");
             return Success200(resp);
         }
 
@@ -162,14 +211,30 @@ namespace GalaShow.Token
         private static Task<APIGatewayProxyResponse> Verify(APIGatewayProxyRequest req)
         {
             var auth = req.Headers != null && req.Headers.TryGetValue("Authorization", out var v) ? v : null;
-            var user = JwtService.Instance.ValidateBearer(auth);
+            var (result, user) = JwtService.Instance.ValidateBearer(auth);
 
-            var sub = user.FindFirst("sub")?.Value ?? user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-            var role = user.FindFirst("role")?.Value;
-            var exp = user.FindFirst("exp")?.Value;
+            switch (result)
+            {
+                case JwtValidationResult.Missing:
+                    return Task.FromResult(ErrorResults.Json(ErrorCode.AuthTokenMissing));
 
-            var body = new VerifyResponse { Sub = sub, Role = role, Exp = exp, Valid = true };
-            return Task.FromResult(Success200(body));
+                case JwtValidationResult.Expired:
+                    return Task.FromResult(ErrorResults.Json(ErrorCode.AuthTokenExpired));
+
+                case JwtValidationResult.Invalid:
+                    return Task.FromResult(ErrorResults.Json(ErrorCode.AuthTokenInvalid));
+
+                case JwtValidationResult.Valid:
+                    var sub = user!.FindFirst("sub")?.Value ?? user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+                    var role = user.FindFirst("role")?.Value;
+                    var exp = user.FindFirst("exp")?.Value;
+
+                    var body = new VerifyResponse { Sub = sub, Role = role, Exp = exp, Valid = true };
+                    return Task.FromResult(Success200(body));
+
+                default:
+                    return Task.FromResult(ErrorResults.Json(ErrorCode.Unauthorized));
+            }
         }
 
         #endregion

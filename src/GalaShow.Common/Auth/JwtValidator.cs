@@ -25,23 +25,43 @@ namespace GalaShow.Common.Auth
             };
         }
 
-        public ClaimsPrincipal? ValidateBearer(string? authorization)
+        public (JwtValidationResult result, ClaimsPrincipal? principal) ValidateBearerDetailed(string? authorization)
         {
-            if (string.IsNullOrWhiteSpace(authorization) || !authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(authorization))
             {
-                return null;
+                return (JwtValidationResult.Missing, null);
+            }
+
+            if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                return (JwtValidationResult.Invalid, null);
             }
 
             var token = authorization.Substring("Bearer ".Length).Trim();
-            
+
             try
             {
-                return _handler.ValidateToken(token, _tvp, out _);
+                var principal = _handler.ValidateToken(token, _tvp, out _);
+                return (JwtValidationResult.Valid, principal);
             }
-            catch (Exception e)
+            catch (SecurityTokenExpiredException)
             {
-                return null;
+                return (JwtValidationResult.Expired, null);
             }
+            catch (SecurityTokenException)
+            {
+                return (JwtValidationResult.Invalid, null);
+            }
+            catch (Exception)
+            {
+                return (JwtValidationResult.Invalid, null);
+            }
+        }
+
+        public ClaimsPrincipal? ValidateBearer(string? authorization)
+        {
+            var (result, principal) = ValidateBearerDetailed(authorization);
+            return result == JwtValidationResult.Valid ? principal : null;
         }
     }
 }

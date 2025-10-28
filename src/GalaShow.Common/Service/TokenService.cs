@@ -52,7 +52,7 @@ namespace GalaShow.Common.Service
                     return Task.FromResult((true, "admin"));
                 }
             }
-
+            //TODO:: 추가 구현 필요 25/10/28
             return Task.FromResult((false, string.Empty));
         }
 
@@ -78,13 +78,19 @@ namespace GalaShow.Common.Service
                 return onUnauthorized();
             }
 
-            var user = JwtService.Instance.ValidateBearer(auth);
-            if (user is null)
-            {
-                return onUnauthorized();
-            }
+            var (result, user) = JwtService.Instance.ValidateBearer(auth);
 
-            return await next(user);
+            switch (result)
+            {
+                case JwtValidationResult.Expired:
+                    return onExpired();
+
+                case JwtValidationResult.Valid:
+                    return await next(user!);
+
+                default:
+                    return onUnauthorized();
+            }
         }
         
         public override void Dispose() => base.Dispose();
