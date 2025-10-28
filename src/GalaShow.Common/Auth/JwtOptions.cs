@@ -4,9 +4,9 @@ namespace GalaShow.Common.Auth
 {
     public class JwtOptions
     {
-        public string? Issuer { get; private init; } = "galashow";
-        public string? Audience { get; private init; } = "galashow-client";
-        public string? SecretArn { get; private init; } = string.Empty;
+        public string? Issuer { get; init; } = "galashow";
+        public string? Audience { get; init; } = "galashow-client";
+        public string? SecretArn { get; init; } = string.Empty;
 
         private const string DevSecretArn = "arn:aws:secretsmanager:ap-northeast-2:610495549763:secret:dev/galashow-kyCunF";
         private const string ProdSecretArn = "arn:aws:secretsmanager:ap-northeast-2:610495549763:secret:prod/galashow-AuW7Z5";

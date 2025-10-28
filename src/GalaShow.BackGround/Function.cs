@@ -89,7 +89,7 @@ namespace GalaShow.BackGround
             var updated = await BackgroundService.Instance.UpdateBackgroundAsync(backId, dto.Title, dto.Type, dto.Url);
             if (updated == 0)
             {
-                return ErrorResults.Json(ErrorCode.BackgroundUpdateFailed);
+                return ErrorResults.Json(ErrorCode.BackgroundNotFound);
             }
 
             return Success200();

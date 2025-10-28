@@ -89,7 +89,7 @@ namespace GalaShow.Banner
             var updated = await BannerService.Instance.UpdateBannerAsync(bannerId, dto.Message);
             if (updated == 0)
             {
-                return ErrorResults.Json(ErrorCode.BannerUpdateFailed);
+                return ErrorResults.Json(ErrorCode.BannerNotFound);
             }
 
             return Success200();
