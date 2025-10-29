@@ -40,7 +40,7 @@ namespace GalaShow.Token
 
                     ("OPTIONS", _) => Success200(),
 
-                    _ => ErrorResults.Json(ErrorCode.PathNotFound)
+                    _ => ErrorResults.Json(ErrorCode.Forbidden)
                 };
             }
             catch (SecurityTokenException ste)

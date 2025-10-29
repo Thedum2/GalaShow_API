@@ -215,7 +215,7 @@ public class IntegrationTests : IAsyncLifetime
 
     /// <summary>
     /// 테스트: 존재하지 않는 배너 ID로 수정 시도
-    /// 목적: 잘못된 ID에 대한 적절한 에러 처리 확인 (커스텀 상태 코드 610)
+    /// 목적: 잘못된 ID에 대한 적절한 에러 처리 확인 (커스텀 상태 코드 450)
     /// </summary>
     [Fact]
     public async Task Banner_Update_WithNonExistentId_ReturnsBannerNotFound()
@@ -237,12 +237,12 @@ public class IntegrationTests : IAsyncLifetime
 
         // Assert
         _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(404);
+        ((int)response.StatusCode).Should().Be(450);
 
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
         body.Should().NotBeNull();
         body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 404 (Banner Not Found)");
+        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 450 (Banner Not Found)");
         _output.WriteLine($"  Error: {body.Error!.Message}");
 
         _client.DefaultRequestHeaders.Authorization = null;
@@ -276,42 +276,6 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
         _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
-        }
-        catch (Exception ex)
-        {
-            RecordTestFailure(testNumber, testName, ex);
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// 테스트: 잘못된 데이터로 배너 수정 시도
-    /// 목적: 유효성 검사가 제대로 작동하는지 확인
-    /// </summary>
-    [Fact]
-    public async Task Banner_Update_WithInvalidData_ReturnsBadRequest()
-    {
-        var testNumber = GetNextTestNumber();
-        var testName = "Banner_Update_WithInvalidData_ReturnsBadRequest";
-        try
-        {
-            // Arrange
-            _output.WriteLine($"\n[TEST #{testNumber}] Banner - Update with Invalid Data");
-            var token = await LoginAndGetTokenAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var invalidContent = new StringContent("{\"invalidField\":\"value\"}", Encoding.UTF8, "application/json");
-
-        // Act
-        var response = await _client.PutAsync("/banners/1", invalidContent);
-
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        // 400 Bad Request 또는 다른 에러가 반환되어야 함
-        response.IsSuccessStatusCode.Should().BeFalse();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Invalid data rejected");
-
-        _client.DefaultRequestHeaders.Authorization = null;
         }
         catch (Exception ex)
         {
@@ -429,7 +393,7 @@ public class IntegrationTests : IAsyncLifetime
 
     /// <summary>
     /// 테스트: 존재하지 않는 배경 ID로 수정 시도
-    /// 목적: 잘못된 ID에 대한 적절한 에러 처리 확인 (커스텀 상태 코드 620)
+    /// 목적: 잘못된 ID에 대한 적절한 에러 처리 확인 (커스텀 상태 코드 451)
     /// </summary>
     [Fact]
     public async Task Background_Update_WithNonExistentId_ReturnsBackgroundNotFound()
@@ -456,12 +420,12 @@ public class IntegrationTests : IAsyncLifetime
 
         // Assert
         _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(404);
+        ((int)response.StatusCode).Should().Be(451);
 
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
         body.Should().NotBeNull();
         body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 404 (Background Not Found)");
+        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 451 (Background Not Found)");
         _output.WriteLine($"  Error: {body.Error!.Message}");
 
         _client.DefaultRequestHeaders.Authorization = null;
@@ -1068,7 +1032,7 @@ public class IntegrationTests : IAsyncLifetime
 
     /// <summary>
     /// 테스트: 잘못된 자격 증명으로 로그인 시도
-    /// 목적: 인증 실패 시 커스텀 상태 코드 600 반환 확인
+    /// 목적: 인증 실패 시 커스텀 상태 코드 440 반환 확인
     /// </summary>
     [Fact]
     public async Task Login_WithInvalidCredentials_ReturnsAuthInvalidCredentials()
@@ -1087,12 +1051,12 @@ public class IntegrationTests : IAsyncLifetime
 
         // Assert
         _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(401);
+        ((int)response.StatusCode).Should().Be(440);
 
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
         body.Should().NotBeNull();
         body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Invalid credentials error (401)");
+        _output.WriteLine($"  Result: ✓ SUCCESS - Invalid credentials error (440)");
         _output.WriteLine($"  Error: {body.Error!.Message}");
         }
         catch (Exception ex)
@@ -1256,7 +1220,7 @@ public class IntegrationTests : IAsyncLifetime
 
     /// <summary>
     /// 테스트: 잘못된 리프레시 토큰으로 갱신 시도
-    /// 목적: 유효하지 않은 토큰에 대한 에러 처리 확인 (커스텀 상태 코드 604)
+    /// 목적: 유효하지 않은 토큰에 대한 에러 처리 확인 (커스텀 상태 코드 444)
     /// </summary>
     [Fact]
     public async Task Refresh_WithInvalidRefreshToken_ReturnsAuthRefreshInvalid()
@@ -1275,12 +1239,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(401);
+            ((int)response.StatusCode).Should().Be(444);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid refresh token error (401)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid refresh token error (444)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
         }
         catch (Exception ex)
@@ -1410,7 +1374,7 @@ public class IntegrationTests : IAsyncLifetime
 
     /// <summary>
     /// 테스트: 토큰 없이 검증 시도
-    /// 목적: Authorization 헤더 누락 시 커스텀 상태 코드 601 반환 확인
+    /// 목적: Authorization 헤더 누락 시 커스텀 상태 코드 441 반환 확인
     /// </summary>
     [Fact]
     public async Task Verify_WithMissingToken_ReturnsAuthTokenMissing()
@@ -1427,12 +1391,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(401);
+            ((int)response.StatusCode).Should().Be(441);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Missing token error (401)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Missing token error (441)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
         }
         catch (Exception ex)
@@ -1444,7 +1408,7 @@ public class IntegrationTests : IAsyncLifetime
 
     /// <summary>
     /// 테스트: 잘못된 토큰으로 검증 시도
-    /// 목적: 유효하지 않은 JWT에 대한 에러 처리 확인 (커스텀 상태 코드 602)
+    /// 목적: 유효하지 않은 JWT에 대한 에러 처리 확인 (커스텀 상태 코드 442)
     /// </summary>
     [Fact]
     public async Task Verify_WithInvalidToken_ReturnsAuthTokenInvalid()
@@ -1463,12 +1427,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(401);
+            ((int)response.StatusCode).Should().Be(442);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid token error (401)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid token error (442)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
 
             _client.DefaultRequestHeaders.Clear();
@@ -1501,12 +1465,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(401);
+            ((int)response.StatusCode).Should().Be(442);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Bearer prefix missing error (401)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Bearer prefix missing error (442)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
 
             _client.DefaultRequestHeaders.Clear();

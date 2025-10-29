@@ -13,7 +13,7 @@ namespace GalaShow.Common.Errors
 
             return new APIGatewayProxyResponse
             {
-                StatusCode = errorInfo.HttpStatusCode,
+                StatusCode = (int)errorInfo.Code,
                 Headers = ResponseHeaders.Get(),
                 Body = JsonSerializer.Serialize(response)
             };
