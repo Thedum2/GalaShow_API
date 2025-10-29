@@ -30,6 +30,9 @@ public class IntegrationTests : IAsyncLifetime
     private readonly HttpClient _client;
     private readonly string _baseUrl;
     private readonly ITestOutputHelper _output;
+    private static int _testCounter = 0;
+    private static readonly List<string> _failedTests = new List<string>();
+    private static readonly object _lockObject = new object();
 
     public IntegrationTests(ITestOutputHelper output)
     {
@@ -61,7 +64,40 @@ public class IntegrationTests : IAsyncLifetime
     public Task DisposeAsync()
     {
         _client.Dispose();
+
+        // 모든 테스트가 끝난 후 실패한 테스트 목록 출력
+        lock (_lockObject)
+        {
+            if (_failedTests.Count > 0)
+            {
+                _output.WriteLine("\n\n" + new string('=', 60));
+                _output.WriteLine($"  FAILED TESTS SUMMARY ({_failedTests.Count} failed)");
+                _output.WriteLine(new string('=', 60));
+                foreach (var failedTest in _failedTests)
+                {
+                    _output.WriteLine($"  {failedTest}");
+                }
+                _output.WriteLine(new string('=', 60) + "\n");
+            }
+        }
+
         return Task.CompletedTask;
+    }
+
+    private int GetNextTestNumber()
+    {
+        lock (_lockObject)
+        {
+            return ++_testCounter;
+        }
+    }
+
+    private void RecordTestFailure(int testNumber, string testName, Exception ex)
+    {
+        lock (_lockObject)
+        {
+            _failedTests.Add($"[{testNumber}] {testName}: {ex.Message}");
+        }
     }
 
     private async Task<string> LoginAndGetTokenAsync()
@@ -94,20 +130,30 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Banner_GetAll_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Banner - Get All");
+        var testNumber = GetNextTestNumber();
+        var testName = "Banner_GetAll_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Banner - Get All");
 
-        // Act
-        var response = await _client.GetAsync("/banners");
+            // Act
+            var response = await _client.GetAsync("/banners");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.IsSuccessStatusCode.Should().BeTrue();
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<List<BannerResponse>>>();
-        body.Should().NotBeNull();
-        body!.Data.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Count} banners");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<List<BannerResponse>>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Count} banners");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     // ========================================
@@ -121,9 +167,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Banner_Update_WithAuth_ReturnsSuccessAndVerifyChanges()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Banner - Update with Auth & Verify Changes");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Banner_Update_WithAuth_ReturnsSuccessAndVerifyChanges";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Banner - Update with Auth & Verify Changes");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var uniqueMessage = $"Test Banner Message {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
@@ -155,6 +205,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Updated Message: {updatedBanner.Message}");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -164,9 +220,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Banner_Update_WithNonExistentId_ReturnsBannerNotFound()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Banner - Update with Non-existent ID");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Banner_Update_WithNonExistentId_ReturnsBannerNotFound";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Banner - Update with Non-existent ID");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var updateRequest = new UpdateBannerRequest { Message = "Should Fail" };
@@ -186,6 +246,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Error: {body.Error!.Message}");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -195,9 +261,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Banner_Update_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Banner - Update without Auth");
-        var content = new StringContent("{\"message\":\"Unauthorized Update\"}", Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "Banner_Update_WithoutAuth_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Banner - Update without Auth");
+            var content = new StringContent("{\"message\":\"Unauthorized Update\"}", Encoding.UTF8, "application/json");
 
         // Act
         var response = await _client.PutAsync("/banners/1", content);
@@ -206,6 +276,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
         _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -215,9 +291,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Banner_Update_WithInvalidData_ReturnsBadRequest()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Banner - Update with Invalid Data");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Banner_Update_WithInvalidData_ReturnsBadRequest";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Banner - Update with Invalid Data");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var invalidContent = new StringContent("{\"invalidField\":\"value\"}", Encoding.UTF8, "application/json");
@@ -232,6 +312,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: ✓ SUCCESS - Invalid data rejected");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     #endregion
@@ -249,20 +335,30 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Background_GetAll_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Background - Get All");
+        var testNumber = GetNextTestNumber();
+        var testName = "Background_GetAll_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Background - Get All");
 
-        // Act
-        var response = await _client.GetAsync("/background");
+            // Act
+            var response = await _client.GetAsync("/background");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.IsSuccessStatusCode.Should().BeTrue();
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<List<BackgroundResponse>>>();
-        body.Should().NotBeNull();
-        body!.Data.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Count} backgrounds");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<List<BackgroundResponse>>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Count} backgrounds");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     // ========================================
@@ -276,9 +372,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Background_Update_WithAuth_ReturnsSuccessAndVerifyChanges()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Background - Update with Auth & Verify Changes");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Background_Update_WithAuth_ReturnsSuccessAndVerifyChanges";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Background - Update with Auth & Verify Changes");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var uniqueTitle = $"Test BG {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
@@ -319,6 +419,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  URL: {updatedBg.Url}");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -328,9 +434,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Background_Update_WithNonExistentId_ReturnsBackgroundNotFound()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Background - Update with Non-existent ID");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Background_Update_WithNonExistentId_ReturnsBackgroundNotFound";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Background - Update with Non-existent ID");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var updateRequest = new UpdateBackgroundRequest
@@ -355,6 +465,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Error: {body.Error!.Message}");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -364,17 +480,27 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Background_Update_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Background - Update without Auth");
-        var content = new StringContent("{\"title\":\"Unauthorized\"}", Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "Background_Update_WithoutAuth_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Background - Update without Auth");
+            var content = new StringContent("{\"title\":\"Unauthorized\"}", Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await _client.PutAsync("/background/1", content);
+            // Act
+            var response = await _client.PutAsync("/background/1", content);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
-        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -384,9 +510,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Background_Update_WithInvalidType_ReturnsBadRequest()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Background - Update with Invalid Type");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Background_Update_WithInvalidType_ReturnsBadRequest";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Background - Update with Invalid Type");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var updateRequest = new UpdateBackgroundRequest
@@ -406,6 +536,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: Response received (validation check)");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     #endregion
@@ -423,22 +559,32 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Policy_Get_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Policy - Get");
+        var testNumber = GetNextTestNumber();
+        var testName = "Policy_Get_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Policy - Get");
 
-        // Act
-        var response = await _client.GetAsync("/policies");
+            // Act
+            var response = await _client.GetAsync("/policies");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.IsSuccessStatusCode.Should().BeTrue();
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<PolicyResponse>>();
-        body.Should().NotBeNull();
-        body!.Data.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Policy retrieved");
-        _output.WriteLine($"  Terms of Service length: {body.Data!.TermsOfService.Length} chars");
-        _output.WriteLine($"  Privacy Policy length: {body.Data!.PrivacyPolicy.Length} chars");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<PolicyResponse>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Policy retrieved");
+            _output.WriteLine($"  Terms of Service length: {body.Data!.TermsOfService.Length} chars");
+            _output.WriteLine($"  Privacy Policy length: {body.Data!.PrivacyPolicy.Length} chars");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     // ========================================
@@ -452,9 +598,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Policy_Update_WithAuth_ReturnsSuccessAndVerifyChanges()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Policy - Update with Auth & Verify Changes");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Policy_Update_WithAuth_ReturnsSuccessAndVerifyChanges";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Policy - Update with Auth & Verify Changes");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var uniqueTerms = $"Terms updated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
@@ -490,6 +640,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Privacy: {policy.Data.PrivacyPolicy}");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -499,17 +655,27 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Policy_Update_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Policy - Update without Auth");
-        var content = new StringContent("{\"termsOfService\":\"Unauthorized\"}", Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "Policy_Update_WithoutAuth_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Policy - Update without Auth");
+            var content = new StringContent("{\"termsOfService\":\"Unauthorized\"}", Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await _client.PutAsync("/policies", content);
+            // Act
+            var response = await _client.PutAsync("/policies", content);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
-        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -519,9 +685,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Policy_Update_PartialUpdate_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Policy - Partial Update (Terms only)");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "Policy_Update_PartialUpdate_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Policy - Partial Update (Terms only)");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var updateRequest = new UpdatePolicyRequest
@@ -540,6 +710,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: Response received (partial update check)");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     #endregion
@@ -557,24 +733,34 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task SnsLinks_Get_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] SNS Links - Get All");
-
-        // Act
-        var response = await _client.GetAsync("/sns-links");
-
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.IsSuccessStatusCode.Should().BeTrue();
-
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<List<SnsLinkResponse>>>();
-        body.Should().NotBeNull();
-        body!.Data.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Count} SNS links");
-
-        if (body.Data.Count > 0)
+        var testNumber = GetNextTestNumber();
+        var testName = "SnsLinks_Get_ReturnsSuccess";
+        try
         {
-            _output.WriteLine($"  First Link: {body.Data[0].Title} - {body.Data[0].Url}");
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] SNS Links - Get All");
+
+            // Act
+            var response = await _client.GetAsync("/sns-links");
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<List<SnsLinkResponse>>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Count} SNS links");
+
+            if (body.Data.Count > 0)
+            {
+                _output.WriteLine($"  First Link: {body.Data[0].Title} - {body.Data[0].Url}");
+            }
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
         }
     }
 
@@ -589,9 +775,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task SnsLinks_Update_WithAuth_ReturnsSuccessAndVerifyChanges()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] SNS Links - Update with Auth & Verify Changes");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "SnsLinks_Update_WithAuth_ReturnsSuccessAndVerifyChanges";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] SNS Links - Update with Auth & Verify Changes");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var uniqueTitle = $"SNS {DateTime.UtcNow:HH:mm:ss}";
@@ -639,6 +829,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Icon: {updatedLink.IconUrl}");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -648,17 +844,27 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task SnsLinks_Update_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] SNS Links - Update without Auth");
-        var content = new StringContent("{\"data\":[]}", Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "SnsLinks_Update_WithoutAuth_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] SNS Links - Update without Auth");
+            var content = new StringContent("{\"data\":[]}", Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await _client.PutAsync("/sns-links", content);
+            // Act
+            var response = await _client.PutAsync("/sns-links", content);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
-        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -668,9 +874,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task SnsLinks_Update_MultipleLinks_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] SNS Links - Update Multiple Links");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "SnsLinks_Update_MultipleLinks_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] SNS Links - Update Multiple Links");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var timestamp = DateTime.UtcNow.ToString("HH:mm:ss");
@@ -694,6 +904,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: ✓ SUCCESS - Multiple links updated (3 links)");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -703,9 +919,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task SnsLinks_Update_WithEmptyArray_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] SNS Links - Update with Empty Array");
-        var token = await LoginAndGetTokenAsync();
+        var testNumber = GetNextTestNumber();
+        var testName = "SnsLinks_Update_WithEmptyArray_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] SNS Links - Update with Empty Array");
+            var token = await LoginAndGetTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var updateRequest = new UpdateSnsLinksRequest { Data = new List<UpdateSnsLinksRequest.SnsLinkItem>() };
@@ -720,10 +940,16 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: Response received (empty array check)");
 
         _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     #endregion
-    
+
     #region [5] TOKEN / AUTHENTICATION TESTS
 
     // ========================================
@@ -737,9 +963,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsSuccessWithTokens()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Login - Valid Credentials");
-        var loginRequest = new LoginRequest { Id = "dev", Password = "dev" };
+        var testNumber = GetNextTestNumber();
+        var testName = "Login_WithValidCredentials_ReturnsSuccessWithTokens";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Login - Valid Credentials");
+            var loginRequest = new LoginRequest { Id = "dev", Password = "dev" };
         var content = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
 
         // Act
@@ -758,6 +988,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: ✓ SUCCESS - Tokens received");
         _output.WriteLine($"  AccessToken length: {body.Data.AccessToken.Length}");
         _output.WriteLine($"  RefreshToken length: {body.Data.RefreshToken.Length}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -767,21 +1003,31 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Login_WithMissingBody_ReturnsBadRequest()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Login - Missing Body");
+        var testNumber = GetNextTestNumber();
+        var testName = "Login_WithMissingBody_ReturnsBadRequest";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Login - Missing Body");
 
-        // Act
-        var response = await _client.PostAsync("/auth/login", null);
+            // Act
+            var response = await _client.PostAsync("/auth/login", null);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Bad request error");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Bad request error");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -791,9 +1037,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Login_WithEmptyCredentials_ReturnsBadRequest()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Login - Empty Credentials");
-        var loginRequest = new LoginRequest { Id = "", Password = "" };
+        var testNumber = GetNextTestNumber();
+        var testName = "Login_WithEmptyCredentials_ReturnsBadRequest";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Login - Empty Credentials");
+            var loginRequest = new LoginRequest { Id = "", Password = "" };
         var content = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
 
         // Act
@@ -808,6 +1058,12 @@ public class IntegrationTests : IAsyncLifetime
         body!.Error.Should().NotBeNull();
         _output.WriteLine($"  Result: ✓ SUCCESS - Empty credentials rejected");
         _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -817,9 +1073,13 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Login_WithInvalidCredentials_ReturnsAuthInvalidCredentials()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Login - Invalid Credentials");
-        var loginRequest = new LoginRequest { Id = "invalid-user", Password = "wrong-password" };
+        var testNumber = GetNextTestNumber();
+        var testName = "Login_WithInvalidCredentials_ReturnsAuthInvalidCredentials";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Login - Invalid Credentials");
+            var loginRequest = new LoginRequest { Id = "invalid-user", Password = "wrong-password" };
         var content = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
 
         // Act
@@ -834,6 +1094,12 @@ public class IntegrationTests : IAsyncLifetime
         body!.Error.Should().NotBeNull();
         _output.WriteLine($"  Result: ✓ SUCCESS - Invalid credentials error (600)");
         _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -843,18 +1109,28 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Login_WithOnlyIdProvided_ReturnsBadRequest()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Login - Only ID Provided");
-        var loginRequest = new LoginRequest { Id = "dev", Password = "" };
-        var content = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "Login_WithOnlyIdProvided_ReturnsBadRequest";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Login - Only ID Provided");
+            var loginRequest = new LoginRequest { Id = "dev", Password = "" };
+            var content = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await _client.PostAsync("/auth/login", content);
+            // Act
+            var response = await _client.PostAsync("/auth/login", content);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.IsSuccessStatusCode.Should().BeFalse();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Partial credentials rejected");
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeFalse();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Partial credentials rejected");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     // ========================================
@@ -868,10 +1144,14 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Refresh_WithValidToken_ReturnsNewAccessToken()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Refresh - Valid Refresh Token");
+        var testNumber = GetNextTestNumber();
+        var testName = "Refresh_WithValidToken_ReturnsNewAccessToken";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Refresh - Valid Refresh Token");
 
-        // 먼저 로그인하여 리프레시 토큰 획득
+            // 먼저 로그인하여 리프레시 토큰 획득
         var loginRequest = new LoginRequest { Id = "dev", Password = "dev" };
         var loginContent = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
         var loginResponse = await _client.PostAsync("/auth/login", loginContent);
@@ -896,6 +1176,12 @@ public class IntegrationTests : IAsyncLifetime
 
         _output.WriteLine($"  Result: ✓ SUCCESS - New access token issued");
         _output.WriteLine($"  New AccessToken length: {refreshBody.Data.AccessToken.Length}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -905,21 +1191,31 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Refresh_WithMissingBody_ReturnsUnauthorized()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Refresh - Missing Body");
+        var testNumber = GetNextTestNumber();
+        var testName = "Refresh_WithMissingBody_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Refresh - Missing Body");
 
-        // Act
-        var response = await _client.PostAsync("/auth/refresh", null);
+            // Act
+            var response = await _client.PostAsync("/auth/refresh", null);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Unauthorized error");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Unauthorized error");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -929,23 +1225,33 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Refresh_WithEmptyRefreshToken_ReturnsUnauthorized()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Refresh - Empty Refresh Token");
-        var refreshRequest = new RefreshRequest { RefreshToken = "" };
-        var content = new StringContent(JsonSerializer.Serialize(refreshRequest), Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "Refresh_WithEmptyRefreshToken_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Refresh - Empty Refresh Token");
+            var refreshRequest = new RefreshRequest { RefreshToken = "" };
+            var content = new StringContent(JsonSerializer.Serialize(refreshRequest), Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await _client.PostAsync("/auth/refresh", content);
+            // Act
+            var response = await _client.PostAsync("/auth/refresh", content);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Empty token rejected");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Empty token rejected");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -955,23 +1261,33 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Refresh_WithInvalidRefreshToken_ReturnsAuthRefreshInvalid()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Refresh - Invalid Refresh Token");
-        var refreshRequest = new RefreshRequest { RefreshToken = "invalid-refresh-token" };
-        var content = new StringContent(JsonSerializer.Serialize(refreshRequest), Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "Refresh_WithInvalidRefreshToken_ReturnsAuthRefreshInvalid";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Refresh - Invalid Refresh Token");
+            var refreshRequest = new RefreshRequest { RefreshToken = "invalid-refresh-token" };
+            var content = new StringContent(JsonSerializer.Serialize(refreshRequest), Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await _client.PostAsync("/auth/refresh", content);
+            // Act
+            var response = await _client.PostAsync("/auth/refresh", content);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(604);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode}");
+            ((int)response.StatusCode).Should().Be(604);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Invalid refresh token error (604)");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid refresh token error (604)");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     // ========================================
@@ -985,20 +1301,30 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Logout_WithMissingBody_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Logout - Missing Body");
+        var testNumber = GetNextTestNumber();
+        var testName = "Logout_WithMissingBody_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Logout - Missing Body");
 
-        // Act
-        var response = await _client.PostAsync("/auth/logout", null);
+            // Act
+            var response = await _client.PostAsync("/auth/logout", null);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().BeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Logout successful without body");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().BeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Logout successful without body");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -1008,22 +1334,32 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Logout_WithEmptyRefreshToken_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Logout - Empty Refresh Token");
-        var logoutRequest = new LogoutRequest { RefreshToken = "" };
-        var content = new StringContent(JsonSerializer.Serialize(logoutRequest), Encoding.UTF8, "application/json");
+        var testNumber = GetNextTestNumber();
+        var testName = "Logout_WithEmptyRefreshToken_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Logout - Empty Refresh Token");
+            var logoutRequest = new LogoutRequest { RefreshToken = "" };
+            var content = new StringContent(JsonSerializer.Serialize(logoutRequest), Encoding.UTF8, "application/json");
 
-        // Act
-        var response = await _client.PostAsync("/auth/logout", content);
+            // Act
+            var response = await _client.PostAsync("/auth/logout", content);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().BeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Logout successful with empty token");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().BeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Logout successful with empty token");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -1033,10 +1369,14 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Logout_WithValidRefreshToken_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Logout - Valid Refresh Token");
+        var testNumber = GetNextTestNumber();
+        var testName = "Logout_WithValidRefreshToken_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Logout - Valid Refresh Token");
 
-        // 먼저 로그인하여 리프레시 토큰 획득
+            // 먼저 로그인하여 리프레시 토큰 획득
         var loginRequest = new LoginRequest { Id = "dev", Password = "dev" };
         var loginContent = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
         var loginResponse = await _client.PostAsync("/auth/login", loginContent);
@@ -1056,6 +1396,12 @@ public class IntegrationTests : IAsyncLifetime
         body.Should().NotBeNull();
         body!.Error.Should().BeNull();
         _output.WriteLine($"  Result: ✓ SUCCESS - Logout successful");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     // ========================================
@@ -1069,21 +1415,31 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Verify_WithMissingToken_ReturnsAuthTokenMissing()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Verify - Missing Token");
+        var testNumber = GetNextTestNumber();
+        var testName = "Verify_WithMissingToken_ReturnsAuthTokenMissing";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Verify - Missing Token");
 
-        // Act
-        var response = await _client.GetAsync("/auth/verify");
+            // Act
+            var response = await _client.GetAsync("/auth/verify");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(601);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode}");
+            ((int)response.StatusCode).Should().Be(601);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Missing token error (601)");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Missing token error (601)");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -1093,25 +1449,35 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Verify_WithInvalidToken_ReturnsAuthTokenInvalid()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Verify - Invalid Token");
-        _client.DefaultRequestHeaders.Clear();
-        _client.DefaultRequestHeaders.Add("Authorization", "Bearer invalid.jwt.token");
+        var testNumber = GetNextTestNumber();
+        var testName = "Verify_WithInvalidToken_ReturnsAuthTokenInvalid";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Verify - Invalid Token");
+            _client.DefaultRequestHeaders.Clear();
+            _client.DefaultRequestHeaders.Add("Authorization", "Bearer invalid.jwt.token");
 
-        // Act
-        var response = await _client.GetAsync("/auth/verify");
+            // Act
+            var response = await _client.GetAsync("/auth/verify");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(602);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode}");
+            ((int)response.StatusCode).Should().Be(602);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Invalid token error (602)");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid token error (602)");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
 
-        _client.DefaultRequestHeaders.Clear();
+            _client.DefaultRequestHeaders.Clear();
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -1121,25 +1487,35 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Verify_WithoutBearerPrefix_ReturnsAuthTokenInvalid()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Verify - Without Bearer Prefix");
-        _client.DefaultRequestHeaders.Clear();
-        _client.DefaultRequestHeaders.Add("Authorization", "some-token-without-bearer");
+        var testNumber = GetNextTestNumber();
+        var testName = "Verify_WithoutBearerPrefix_ReturnsAuthTokenInvalid";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Verify - Without Bearer Prefix");
+            _client.DefaultRequestHeaders.Clear();
+            _client.DefaultRequestHeaders.Add("Authorization", "some-token-without-bearer");
 
-        // Act
-        var response = await _client.GetAsync("/auth/verify");
+            // Act
+            var response = await _client.GetAsync("/auth/verify");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(602);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode}");
+            ((int)response.StatusCode).Should().Be(602);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Bearer prefix missing error (602)");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Bearer prefix missing error (602)");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
 
-        _client.DefaultRequestHeaders.Clear();
+            _client.DefaultRequestHeaders.Clear();
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -1149,10 +1525,14 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Verify_WithValidToken_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] Verify - Valid Token");
+        var testNumber = GetNextTestNumber();
+        var testName = "Verify_WithValidToken_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Verify - Valid Token");
 
-        // 먼저 로그인하여 액세스 토큰 획득
+            // 먼저 로그인하여 액세스 토큰 획득
         var loginRequest = new LoginRequest { Id = "dev", Password = "dev" };
         var loginContent = new StringContent(JsonSerializer.Serialize(loginRequest), Encoding.UTF8, "application/json");
         var loginResponse = await _client.PostAsync("/auth/login", loginContent);
@@ -1174,6 +1554,12 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: ✓ SUCCESS - Token verified");
 
         _client.DefaultRequestHeaders.Clear();
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     #endregion
@@ -1191,21 +1577,31 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task UnknownPath_ReturnsForbidden()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] MISC - Unknown Path");
+        var testNumber = GetNextTestNumber();
+        var testName = "UnknownPath_ReturnsForbidden";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] MISC - Unknown Path");
 
-        // Act
-        var response = await _client.GetAsync("/auth/unknown");
+            // Act
+            var response = await _client.GetAsync("/auth/unknown");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Unknown path forbidden");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Unknown path forbidden");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -1215,21 +1611,31 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task WrongHttpMethod_ReturnsForbidden()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] MISC - Wrong HTTP Method");
+        var testNumber = GetNextTestNumber();
+        var testName = "WrongHttpMethod_ReturnsForbidden";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] MISC - Wrong HTTP Method");
 
-        // Act
-        var response = await _client.GetAsync("/auth/login");
+            // Act
+            var response = await _client.GetAsync("/auth/login");
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
 
-        var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-        body.Should().NotBeNull();
-        body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Wrong method forbidden");
-        _output.WriteLine($"  Error: {body.Error!.Message}");
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Wrong method forbidden");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     // ========================================
@@ -1243,17 +1649,27 @@ public class IntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Options_PreflightRequest_ReturnsSuccess()
     {
-        // Arrange
-        _output.WriteLine("\n[TEST] MISC - OPTIONS Preflight Request");
-        var request = new HttpRequestMessage(HttpMethod.Options, "/auth/login");
+        var testNumber = GetNextTestNumber();
+        var testName = "Options_PreflightRequest_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] MISC - OPTIONS Preflight Request");
+            var request = new HttpRequestMessage(HttpMethod.Options, "/auth/login");
 
-        // Act
-        var response = await _client.SendAsync(request);
+            // Act
+            var response = await _client.SendAsync(request);
 
-        // Assert
-        _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
-        _output.WriteLine($"  Result: ✓ SUCCESS - OPTIONS request handled");
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+            _output.WriteLine($"  Result: ✓ SUCCESS - OPTIONS request handled");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
     }
 
     #endregion
