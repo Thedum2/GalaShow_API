@@ -237,12 +237,12 @@ public class IntegrationTests : IAsyncLifetime
 
         // Assert
         _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(610);
+        ((int)response.StatusCode).Should().Be(404);
 
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
         body.Should().NotBeNull();
         body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 610");
+        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 404 (Banner Not Found)");
         _output.WriteLine($"  Error: {body.Error!.Message}");
 
         _client.DefaultRequestHeaders.Authorization = null;
@@ -456,12 +456,12 @@ public class IntegrationTests : IAsyncLifetime
 
         // Assert
         _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(620);
+        ((int)response.StatusCode).Should().Be(404);
 
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
         body.Should().NotBeNull();
         body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 620");
+        _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 404 (Background Not Found)");
         _output.WriteLine($"  Error: {body.Error!.Message}");
 
         _client.DefaultRequestHeaders.Authorization = null;
@@ -1087,12 +1087,12 @@ public class IntegrationTests : IAsyncLifetime
 
         // Assert
         _output.WriteLine($"  Status: {(int)response.StatusCode}");
-        ((int)response.StatusCode).Should().Be(600);
+        ((int)response.StatusCode).Should().Be(401);
 
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
         body.Should().NotBeNull();
         body!.Error.Should().NotBeNull();
-        _output.WriteLine($"  Result: ✓ SUCCESS - Invalid credentials error (600)");
+        _output.WriteLine($"  Result: ✓ SUCCESS - Invalid credentials error (401)");
         _output.WriteLine($"  Error: {body.Error!.Message}");
         }
         catch (Exception ex)
@@ -1275,12 +1275,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(604);
+            ((int)response.StatusCode).Should().Be(401);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid refresh token error (604)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid refresh token error (401)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
         }
         catch (Exception ex)
@@ -1427,12 +1427,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(601);
+            ((int)response.StatusCode).Should().Be(401);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Missing token error (601)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Missing token error (401)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
         }
         catch (Exception ex)
@@ -1463,12 +1463,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(602);
+            ((int)response.StatusCode).Should().Be(401);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid token error (602)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Invalid token error (401)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
 
             _client.DefaultRequestHeaders.Clear();
@@ -1501,12 +1501,12 @@ public class IntegrationTests : IAsyncLifetime
 
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode}");
-            ((int)response.StatusCode).Should().Be(602);
+            ((int)response.StatusCode).Should().Be(401);
 
             var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
             body.Should().NotBeNull();
             body!.Error.Should().NotBeNull();
-            _output.WriteLine($"  Result: ✓ SUCCESS - Bearer prefix missing error (602)");
+            _output.WriteLine($"  Result: ✓ SUCCESS - Bearer prefix missing error (401)");
             _output.WriteLine($"  Error: {body.Error!.Message}");
 
             _client.DefaultRequestHeaders.Clear();

@@ -10,10 +10,10 @@ namespace GalaShow.Common.Errors
         {
             ErrorInfo errorInfo = ErrorCatalog.Get(code, msgOverride);
             var response = ApiResponse<object>.Fail(errorInfo);
-            
+
             return new APIGatewayProxyResponse
             {
-                StatusCode = (int)errorInfo.Code,
+                StatusCode = errorInfo.HttpStatusCode,
                 Headers = ResponseHeaders.Get(),
                 Body = JsonSerializer.Serialize(response)
             };
