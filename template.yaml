@@ -87,6 +87,12 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /banners/{bannerId}
             Method: options
+        BannerCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /banners/{proxy+}
+            Method: ANY
 
   ProdBannerFunction:
     Condition: IsProd
@@ -128,6 +134,12 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /banners/{bannerId}
             Method: options
+        BannerCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /banners/{proxy+}
+            Method: ANY
 
   DevTokenFunction:
     Condition: IsDev
@@ -194,6 +206,18 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /auth/verify
             Method: options
+        AuthCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /auth/{proxy+}
+            Method: ANY
+        GlobalCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /{proxy+}
+            Method: ANY
 
   ProdTokenFunction:
     Condition: IsProd
@@ -259,9 +283,19 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /auth/verify
             Method: options
-  
-  
-  
+        AuthCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /auth/{proxy+}
+            Method: ANY
+        GlobalCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /{proxy+}
+            Method: ANY
+
   DevBackgroundFunction:
     Condition: IsDev
     Type: AWS::Serverless::Function
@@ -303,9 +337,13 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /background/{backId}
             Method: options
-  
-  
-  
+        BackgroundCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /background/{proxy+}
+            Method: ANY
+
   ProdBackgroundFunction:
     Condition: IsProd
     Type: AWS::Serverless::Function
@@ -346,7 +384,13 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /background/{backId}
             Method: options
-  
+        BackgroundCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /background/{proxy+}
+            Method: ANY
+
   DevPolicyFunction:
     Condition: IsDev
     Type: AWS::Serverless::Function
@@ -382,8 +426,13 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /policies
             Method: options
-  
-  
+        PolicyCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /policies/{proxy+}
+            Method: ANY
+
   ProdPolicyFunction:
     Condition: IsProd
     Type: AWS::Serverless::Function
@@ -418,6 +467,12 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /policies
             Method: options
+        PolicyCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /policies/{proxy+}
+            Method: ANY
 
   DevSnsFunction:
     Condition: IsDev
@@ -454,6 +509,12 @@ Resources:
             RestApiId: !Ref DevApi
             Path: /sns-links
             Method: options
+        SnsLinksCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /sns-links/{proxy+}
+            Method: ANY
 
   DevChzzkProxyFunction:
     Condition: IsDev
@@ -519,6 +580,12 @@ Resources:
             RestApiId: !Ref ProdApi
             Path: /sns-links
             Method: options
+        SnsLinksCatchAll:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /sns-links/{proxy+}
+            Method: ANY
 
   ProdChzzkProxyFunction:
     Condition: IsProd
