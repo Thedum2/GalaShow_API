@@ -9,7 +9,6 @@ namespace GalaShow.Common.Errors
             [ErrorCode.BadRequest]           = new(ErrorCode.BadRequest, "Bad request"),
             [ErrorCode.Unauthorized]         = new(ErrorCode.Unauthorized, "Unauthorized"),
             [ErrorCode.Forbidden]            = new(ErrorCode.Forbidden, "Forbidden"),
-            [ErrorCode.PathNotFound]         = new(ErrorCode.PathNotFound, "Path not found"),
             [ErrorCode.Conflict]             = new(ErrorCode.Conflict, "Conflict"),
             [ErrorCode.TooManyRequests]      = new(ErrorCode.TooManyRequests, "Too many requests"),
             [ErrorCode.Internal]             = new(ErrorCode.Internal, "Internal server error"),

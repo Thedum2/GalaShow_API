@@ -10,7 +10,6 @@ namespace GalaShow.Common.Errors
         BadRequest = 400,
         Unauthorized = 401,
         Forbidden = 403,
-        PathNotFound = 404,
         Conflict = 409,
         TooManyRequests = 429,
         Internal = 500,
