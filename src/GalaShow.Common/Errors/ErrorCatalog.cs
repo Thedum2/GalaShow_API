@@ -28,12 +28,23 @@ namespace GalaShow.Common.Errors
             [ErrorCode.BackgroundNotFound]   = new(ErrorCode.BackgroundNotFound, "Background not found"),
             [ErrorCode.PolicyNotFound]       = new(ErrorCode.PolicyNotFound, "Policy not found"),
             [ErrorCode.SnsLinkNotFound]      = new(ErrorCode.SnsLinkNotFound, "SnsLink not found"),
+            [ErrorCode.MinigameNotFound]     = new(ErrorCode.MinigameNotFound, "Minigame not found"),
+            [ErrorCode.AvatarNotFound]       = new(ErrorCode.AvatarNotFound, "Avatar not found"),
+
+            // Resource Conflict Errors
+            [ErrorCode.MinigameAlreadyExists] = new(ErrorCode.MinigameAlreadyExists, "Minigame already exists"),
+            [ErrorCode.MinigameInUse]        = new(ErrorCode.MinigameInUse, "Minigame is in use"),
+            [ErrorCode.MinigameInvalidTags]  = new(ErrorCode.MinigameInvalidTags, "Invalid minigame tags"),
+            [ErrorCode.AvatarDuplicateOrder] = new(ErrorCode.AvatarDuplicateOrder, "Duplicate avatar order"),
 
             // Resource Update Failed Errors
             [ErrorCode.BannerUpdateFailed]       = new(ErrorCode.BannerUpdateFailed, "Failed to update banner"),
             [ErrorCode.BackgroundUpdateFailed]   = new(ErrorCode.BackgroundUpdateFailed, "Failed to update background"),
             [ErrorCode.PolicyUpdateFailed]       = new(ErrorCode.PolicyUpdateFailed, "Failed to update policy"),
             [ErrorCode.SnsLinkUpdateFailed]      = new(ErrorCode.SnsLinkUpdateFailed, "Failed to update SnsLink"),
+            [ErrorCode.MinigameCreateFailed]     = new(ErrorCode.MinigameCreateFailed, "Failed to create minigame"),
+            [ErrorCode.MinigameUpdateFailed]     = new(ErrorCode.MinigameUpdateFailed, "Failed to update minigame"),
+            [ErrorCode.AvatarUpdateFailed]       = new(ErrorCode.AvatarUpdateFailed, "Failed to update avatar"),
         };
 
         public static ErrorInfo Get(ErrorCode code, string? msgOverride = null)

@@ -6,12 +6,14 @@ using FluentAssertions;
 using GalaShow.Common.Models;
 using GalaShow.Common.Models.Request.Background;
 using GalaShow.Common.Models.Request.Banner;
+using GalaShow.Common.Models.Request.Minigame;
 using GalaShow.Common.Models.Request.Policy;
 using GalaShow.Common.Models.Request.Sns;
 using GalaShow.Common.Models.Request.Token;
 using GalaShow.Common.Models.Response.Token;
 using GalaShow.Common.Models.Response.Banner;
 using GalaShow.Common.Models.Response.Background;
+using GalaShow.Common.Models.Response.Minigame;
 using GalaShow.Common.Models.Response.Policy;
 using GalaShow.Common.Models.Response.Sns;
 using Microsoft.Extensions.Configuration;
@@ -1512,6 +1514,825 @@ public class IntegrationTests : IAsyncLifetime
         _output.WriteLine($"  Result: ✓ SUCCESS - Token verified");
 
         _client.DefaultRequestHeaders.Clear();
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    #endregion
+
+    #region [6] MINIGAME TESTS
+
+    // ========================================
+    // Minigame GET Tests - 미니게임 조회 테스트
+    // ========================================
+
+    /// <summary>
+    /// 테스트: 미니게임 목록 조회 성공
+    /// 목적: 인증 없이 미니게임 목록을 조회할 수 있는지 확인
+    /// </summary>
+    [Fact]
+    public async Task Minigame_GetAll_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_GetAll_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Get All");
+
+            // Act
+            var response = await _client.GetAsync("/minigames");
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<MinigameListResponse>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Total} minigames");
+            _output.WriteLine($"  Items count: {body.Data.Items.Count}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 필터를 사용한 미니게임 목록 조회
+    /// 목적: 태그 기반 필터링이 정상적으로 작동하는지 확인
+    /// </summary>
+    [Fact]
+    public async Task Minigame_GetAll_WithFilters_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_GetAll_WithFilters_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Get All With Filters");
+
+            // Act
+            var response = await _client.GetAsync("/minigames?scale=large&difficulty=2");
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<MinigameListResponse>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Filtered results");
+            _output.WriteLine($"  Total filtered: {body.Data!.Total}");
+            _output.WriteLine($"  Filters applied: scale=large, difficulty=2");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 미니게임 상세 조회 성공
+    /// 목적: 특정 미니게임의 상세 정보를 조회할 수 있는지 확인
+    /// </summary>
+    [Fact]
+    public async Task Minigame_GetDetail_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_GetDetail_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Get Detail");
+
+            // First get a list to find a valid ID
+            var listResponse = await _client.GetAsync("/minigames");
+            var listBody = await listResponse.Content.ReadFromJsonAsync<ApiResponse<MinigameListResponse>>();
+
+            if (listBody?.Data?.Items.Count > 0)
+            {
+                var gameId = listBody.Data.Items[0].Id;
+
+                // Act
+                var response = await _client.GetAsync($"/minigames/{gameId}");
+
+                // Assert
+                _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+                response.IsSuccessStatusCode.Should().BeTrue();
+
+                var body = await response.Content.ReadFromJsonAsync<ApiResponse<MinigameDetailResponse>>();
+                body.Should().NotBeNull();
+                body!.Data.Should().NotBeNull();
+                _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved minigame detail");
+                _output.WriteLine($"  Game ID: {body.Data!.Id}");
+                _output.WriteLine($"  Name: {body.Data.Name}");
+            }
+            else
+            {
+                _output.WriteLine($"  Result: ⚠ SKIPPED - No minigames in database");
+            }
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 존재하지 않는 미니게임 ID로 조회
+    /// 목적: 잘못된 ID에 대한 적절한 에러 처리 확인 (커스텀 상태 코드 454)
+    /// </summary>
+    [Fact]
+    public async Task Minigame_GetDetail_WithNonExistentId_ReturnsMinigameNotFound()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_GetDetail_WithNonExistentId_ReturnsMinigameNotFound";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Get Detail with Non-existent ID");
+
+            // Act
+            var response = await _client.GetAsync("/minigames/99999");
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode}");
+            ((int)response.StatusCode).Should().Be(454);
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 454 (Minigame Not Found)");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    // ========================================
+    // Minigame CREATE Tests - 미니게임 생성 테스트
+    // ========================================
+
+    /// <summary>
+    /// 테스트: 인증된 사용자의 미니게임 생성 성공
+    /// 목적: 미니게임 생성이 정상적으로 작동하는지 검증
+    /// </summary>
+    [Fact]
+    public async Task Minigame_Create_WithAuth_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_Create_WithAuth_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Create with Auth");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var createRequest = new CreateMinigameRequest
+            {
+                Name = $"Test Game {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}",
+                Description = "Test game description",
+                VideoUrl = "http://example.com/video.mp4",
+                LogoUrl = "http://example.com/logo.jpg",
+                Tags = new MinigameTagsDto
+                {
+                    Scale = new List<string> { "medium" },
+                    Difficulty = new List<string> { "2" },
+                    Round = new List<string> { "1-2" },
+                    Type = new List<string> { "strategy" },
+                    SurvivalRate = new List<string> { "medium" },
+                    WinCondition = new List<string> { "score" }
+                },
+                Tutorial = new List<MinigameTutorialDto>
+                {
+                    new MinigameTutorialDto { Step = 1, Description = "Step 1 tutorial" },
+                    new MinigameTutorialDto { Step = 2, Description = "Step 2 tutorial" }
+                },
+                Controls = new List<MinigameControlDto>
+                {
+                    new MinigameControlDto { KeyName = "Move", Key = new List<string> { "W", "A", "S", "D" } }
+                }
+            };
+            var content = new StringContent(JsonSerializer.Serialize(createRequest), Encoding.UTF8, "application/json");
+
+            // Act
+            var response = await _client.PostAsync("/minigames", content);
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<MinigameCreatedResponse>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            body.Data!.Id.Should().BeGreaterThan(0);
+            _output.WriteLine($"  Result: ✓ SUCCESS - Minigame created");
+            _output.WriteLine($"  New Game ID: {body.Data.Id}");
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 인증 없이 미니게임 생성 시도
+    /// 목적: 인증되지 않은 요청에 대한 접근 제어 확인 (401 Unauthorized)
+    /// </summary>
+    [Fact]
+    public async Task Minigame_Create_WithoutAuth_ReturnsUnauthorized()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_Create_WithoutAuth_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Create without Auth");
+            var content = new StringContent("{\"name\":\"Unauthorized\"}", Encoding.UTF8, "application/json");
+
+            // Act
+            var response = await _client.PostAsync("/minigames", content);
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    // ========================================
+    // Minigame UPDATE Tests - 미니게임 수정 테스트
+    // ========================================
+
+    /// <summary>
+    /// 테스트: 인증된 사용자의 미니게임 수정 성공
+    /// 목적: 미니게임 업데이트가 정상적으로 작동하는지 검증
+    /// </summary>
+    [Fact]
+    public async Task Minigame_Update_WithAuth_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_Update_WithAuth_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Update with Auth");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // First get a list to find a valid ID
+            var listResponse = await _client.GetAsync("/minigames");
+            var listBody = await listResponse.Content.ReadFromJsonAsync<ApiResponse<MinigameListResponse>>();
+
+            if (listBody?.Data?.Items.Count > 0)
+            {
+                var gameId = listBody.Data.Items[0].Id;
+                var uniqueName = $"Updated Game {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
+
+                var updateRequest = new UpdateMinigameRequest
+                {
+                    Name = uniqueName,
+                    Description = "Updated description",
+                    VideoUrl = "http://example.com/updated-video.mp4",
+                    LogoUrl = "http://example.com/updated-logo.jpg",
+                    Tags = new MinigameTagsDto
+                    {
+                        Scale = new List<string> { "large" },
+                        Difficulty = new List<string> { "3" },
+                        Round = new List<string> { "3-4" },
+                        Type = new List<string> { "strategy", "coop" },
+                        SurvivalRate = new List<string> { "low" },
+                        WinCondition = new List<string> { "goal" }
+                    },
+                    Tutorial = new List<MinigameTutorialDto>
+                    {
+                        new MinigameTutorialDto { Step = 1, Description = "Updated tutorial" }
+                    },
+                    Controls = new List<MinigameControlDto>
+                    {
+                        new MinigameControlDto { KeyName = "Jump", Key = new List<string> { "Space" } }
+                    }
+                };
+                var content = new StringContent(JsonSerializer.Serialize(updateRequest), Encoding.UTF8, "application/json");
+
+                // Act
+                var response = await _client.PutAsync($"/minigames/{gameId}", content);
+
+                // Assert
+                _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+                response.IsSuccessStatusCode.Should().BeTrue();
+
+                var body = await response.Content.ReadFromJsonAsync<ApiResponse<MinigameUpdatedResponse>>();
+                body.Should().NotBeNull();
+                _output.WriteLine($"  Result: ✓ SUCCESS - Minigame updated");
+                _output.WriteLine($"  Updated Game ID: {gameId}");
+            }
+            else
+            {
+                _output.WriteLine($"  Result: ⚠ SKIPPED - No minigames in database");
+            }
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 존재하지 않는 미니게임 ID로 수정 시도
+    /// 목적: 잘못된 ID에 대한 적절한 에러 처리 확인 (커스텀 상태 코드 454)
+    /// </summary>
+    [Fact]
+    public async Task Minigame_Update_WithNonExistentId_ReturnsMinigameNotFound()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_Update_WithNonExistentId_ReturnsMinigameNotFound";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Update with Non-existent ID");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var updateRequest = new UpdateMinigameRequest { Name = "Should Fail" };
+            var content = new StringContent(JsonSerializer.Serialize(updateRequest), Encoding.UTF8, "application/json");
+
+            // Act
+            var response = await _client.PutAsync("/minigames/99999", content);
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode}");
+            ((int)response.StatusCode).Should().Be(454);
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 454 (Minigame Not Found)");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    // ========================================
+    // Minigame DELETE Tests - 미니게임 삭제 테스트
+    // ========================================
+
+    /// <summary>
+    /// 테스트: 인증된 사용자의 미니게임 삭제 성공
+    /// 목적: 미니게임 삭제가 정상적으로 작동하는지 검증
+    /// </summary>
+    [Fact]
+    public async Task Minigame_Delete_WithAuth_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_Delete_WithAuth_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Delete with Auth");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // First create a minigame to delete
+            var createRequest = new CreateMinigameRequest
+            {
+                Name = "Game to Delete",
+                Description = "This game will be deleted",
+                VideoUrl = "http://example.com/video.mp4",
+                LogoUrl = "http://example.com/logo.jpg",
+                Tags = new MinigameTagsDto
+                {
+                    Scale = new List<string> { "small" },
+                    Difficulty = new List<string> { "1" },
+                    Round = new List<string> { "1-2" },
+                    Type = new List<string> { "luck" },
+                    SurvivalRate = new List<string> { "high" },
+                    WinCondition = new List<string> { "first" }
+                },
+                Tutorial = new List<MinigameTutorialDto>(),
+                Controls = new List<MinigameControlDto>()
+            };
+            var createContent = new StringContent(JsonSerializer.Serialize(createRequest), Encoding.UTF8, "application/json");
+            var createResponse = await _client.PostAsync("/minigames", createContent);
+            var createBody = await createResponse.Content.ReadFromJsonAsync<ApiResponse<MinigameCreatedResponse>>();
+
+            if (createBody?.Data?.Id > 0)
+            {
+                var gameId = createBody.Data.Id;
+
+                // Act
+                var response = await _client.DeleteAsync($"/minigames/{gameId}");
+
+                // Assert
+                _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+                response.IsSuccessStatusCode.Should().BeTrue();
+                _output.WriteLine($"  Result: ✓ SUCCESS - Minigame deleted");
+                _output.WriteLine($"  Deleted Game ID: {gameId}");
+            }
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 인증 없이 미니게임 삭제 시도
+    /// 목적: 인증되지 않은 요청에 대한 접근 제어 확인 (401 Unauthorized)
+    /// </summary>
+    [Fact]
+    public async Task Minigame_Delete_WithoutAuth_ReturnsUnauthorized()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_Delete_WithoutAuth_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Delete without Auth");
+
+            // Act
+            var response = await _client.DeleteAsync("/minigames/1");
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    // ========================================
+    // Survival Rate Tests - 생존률 테스트
+    // ========================================
+
+    /// <summary>
+    /// 테스트: 미니게임 생존률 조회 성공
+    /// 목적: 특정 미니게임의 생존률 정보를 조회할 수 있는지 확인
+    /// </summary>
+    [Fact]
+    public async Task Minigame_GetSurvivalRate_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_GetSurvivalRate_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Get Survival Rate");
+
+            // First get a list to find a valid ID
+            var listResponse = await _client.GetAsync("/minigames");
+            var listBody = await listResponse.Content.ReadFromJsonAsync<ApiResponse<MinigameListResponse>>();
+
+            if (listBody?.Data?.Items.Count > 0)
+            {
+                var gameId = listBody.Data.Items[0].Id;
+
+                // Act
+                var response = await _client.GetAsync($"/minigames/{gameId}/survival-rate");
+
+                // Assert
+                _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+                response.IsSuccessStatusCode.Should().BeTrue();
+
+                var body = await response.Content.ReadFromJsonAsync<ApiResponse<SurvivalRateResponse>>();
+                body.Should().NotBeNull();
+                body!.Data.Should().NotBeNull();
+                _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved survival rate");
+                _output.WriteLine($"  Game ID: {gameId}");
+                _output.WriteLine($"  Total Players: {body.Data!.TotalPlayers}");
+                _output.WriteLine($"  Survivors: {body.Data.Survivors}");
+                _output.WriteLine($"  Survival Rate: {body.Data.SurvivalRate}%");
+            }
+            else
+            {
+                _output.WriteLine($"  Result: ⚠ SKIPPED - No minigames in database");
+            }
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 인증된 사용자의 생존률 데이터 추가 성공
+    /// 목적: 생존률 데이터 추가가 정상적으로 작동하는지 검증
+    /// </summary>
+    [Fact]
+    public async Task Minigame_AddSurvivalRate_WithAuth_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_AddSurvivalRate_WithAuth_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Add Survival Rate with Auth");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // First get a list to find a valid ID
+            var listResponse = await _client.GetAsync("/minigames");
+            var listBody = await listResponse.Content.ReadFromJsonAsync<ApiResponse<MinigameListResponse>>();
+
+            if (listBody?.Data?.Items.Count > 0)
+            {
+                var gameId = listBody.Data.Items[0].Id;
+
+                var addRequest = new AddSurvivalRateRequest
+                {
+                    TotalPlayers = 100,
+                    Survivors = 45
+                };
+                var content = new StringContent(JsonSerializer.Serialize(addRequest), Encoding.UTF8, "application/json");
+
+                // Act
+                var response = await _client.PostAsync($"/minigames/{gameId}/survival-rate", content);
+
+                // Assert
+                _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+                response.IsSuccessStatusCode.Should().BeTrue();
+
+                var body = await response.Content.ReadFromJsonAsync<ApiResponse<SurvivalRateAddedResponse>>();
+                body.Should().NotBeNull();
+                _output.WriteLine($"  Result: ✓ SUCCESS - Survival rate data added");
+                _output.WriteLine($"  Game ID: {gameId}");
+            }
+            else
+            {
+                _output.WriteLine($"  Result: ⚠ SKIPPED - No minigames in database");
+            }
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 인증된 사용자의 생존률 수정 성공
+    /// 목적: 생존률 업데이트가 정상적으로 작동하는지 검증
+    /// </summary>
+    [Fact]
+    public async Task Minigame_UpdateSurvivalRate_WithAuth_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "Minigame_UpdateSurvivalRate_WithAuth_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Minigame - Update Survival Rate with Auth");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // First get a list to find a valid ID
+            var listResponse = await _client.GetAsync("/minigames");
+            var listBody = await listResponse.Content.ReadFromJsonAsync<ApiResponse<MinigameListResponse>>();
+
+            if (listBody?.Data?.Items.Count > 0)
+            {
+                var gameId = listBody.Data.Items[0].Id;
+
+                var updateRequest = new UpdateSurvivalRateRequest
+                {
+                    SurvivalRate = 40.0m,
+                    TotalGames = 10,
+                    TotalPlayers = 200,
+                    Survivors = 80
+                };
+                var content = new StringContent(JsonSerializer.Serialize(updateRequest), Encoding.UTF8, "application/json");
+
+                // Act
+                var response = await _client.PutAsync($"/minigames/{gameId}/survival-rate", content);
+
+                // Assert
+                _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+                response.IsSuccessStatusCode.Should().BeTrue();
+
+                var body = await response.Content.ReadFromJsonAsync<ApiResponse<SurvivalRateResponse>>();
+                body.Should().NotBeNull();
+                _output.WriteLine($"  Result: ✓ SUCCESS - Survival rate updated");
+                _output.WriteLine($"  Game ID: {gameId}");
+            }
+            else
+            {
+                _output.WriteLine($"  Result: ⚠ SKIPPED - No minigames in database");
+            }
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    // ========================================
+    // Viewer Avatar Tests - 시청자 아바타 테스트
+    // ========================================
+
+    /// <summary>
+    /// 테스트: 시청자 아바타 목록 조회 성공
+    /// 목적: 인증된 사용자가 시청자 아바타 목록을 조회할 수 있는지 확인
+    /// </summary>
+    [Fact]
+    public async Task ViewerAvatars_Get_WithAuth_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "ViewerAvatars_Get_WithAuth_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Viewer Avatars - Get with Auth");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // Act
+            var response = await _client.GetAsync("/viewer-avatars");
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<List<ViewerAvatarResponse>>>();
+            body.Should().NotBeNull();
+            body!.Data.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Retrieved {body.Data!.Count} viewer avatars");
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 인증 없이 시청자 아바타 조회 시도
+    /// 목적: 인증되지 않은 요청에 대한 접근 제어 확인 (401 Unauthorized)
+    /// </summary>
+    [Fact]
+    public async Task ViewerAvatars_Get_WithoutAuth_ReturnsUnauthorized()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "ViewerAvatars_Get_WithoutAuth_ReturnsUnauthorized";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Viewer Avatars - Get without Auth");
+
+            // Act
+            var response = await _client.GetAsync("/viewer-avatars");
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly rejected unauthorized request");
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 인증된 사용자의 시청자 아바타 목록 수정 성공
+    /// 목적: 시청자 아바타 업데이트가 정상적으로 작동하는지 검증
+    /// </summary>
+    [Fact]
+    public async Task ViewerAvatars_Update_WithAuth_ReturnsSuccess()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "ViewerAvatars_Update_WithAuth_ReturnsSuccess";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Viewer Avatars - Update with Auth");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var updateRequest = new UpdateViewerAvatarsRequest
+            {
+                Data = new List<ViewerAvatarDto>
+                {
+                    new ViewerAvatarDto
+                    {
+                        Id = 1,
+                        Order = 1,
+                        Name = $"Test Avatar {DateTime.UtcNow:HH:mm:ss}",
+                        GifUrl = "http://example.com/avatar1.gif"
+                    },
+                    new ViewerAvatarDto
+                    {
+                        Id = 2,
+                        Order = 2,
+                        Name = "Test Avatar 2",
+                        GifUrl = "http://example.com/avatar2.gif"
+                    }
+                }
+            };
+            var content = new StringContent(JsonSerializer.Serialize(updateRequest), Encoding.UTF8, "application/json");
+
+            // Act
+            var response = await _client.PutAsync("/viewer-avatars", content);
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
+            response.IsSuccessStatusCode.Should().BeTrue();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Viewer avatars updated");
+
+            _client.DefaultRequestHeaders.Authorization = null;
+        }
+        catch (Exception ex)
+        {
+            RecordTestFailure(testNumber, testName, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 테스트: 중복된 Order로 시청자 아바타 수정 시도
+    /// 목적: Order 중복 검증이 정상적으로 작동하는지 확인 (커스텀 상태 코드 461)
+    /// </summary>
+    [Fact]
+    public async Task ViewerAvatars_Update_WithDuplicateOrder_ReturnsAvatarDuplicateOrder()
+    {
+        var testNumber = GetNextTestNumber();
+        var testName = "ViewerAvatars_Update_WithDuplicateOrder_ReturnsAvatarDuplicateOrder";
+        try
+        {
+            // Arrange
+            _output.WriteLine($"\n[TEST #{testNumber}] Viewer Avatars - Update with Duplicate Order");
+            var token = await LoginAndGetTokenAsync();
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var updateRequest = new UpdateViewerAvatarsRequest
+            {
+                Data = new List<ViewerAvatarDto>
+                {
+                    new ViewerAvatarDto { Id = 1, Order = 1, Name = "Avatar 1", GifUrl = "http://example.com/1.gif" },
+                    new ViewerAvatarDto { Id = 2, Order = 1, Name = "Avatar 2", GifUrl = "http://example.com/2.gif" } // Duplicate order
+                }
+            };
+            var content = new StringContent(JsonSerializer.Serialize(updateRequest), Encoding.UTF8, "application/json");
+
+            // Act
+            var response = await _client.PutAsync("/viewer-avatars", content);
+
+            // Assert
+            _output.WriteLine($"  Status: {(int)response.StatusCode}");
+            ((int)response.StatusCode).Should().Be(461);
+
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
+            body.Should().NotBeNull();
+            body!.Error.Should().NotBeNull();
+            _output.WriteLine($"  Result: ✓ SUCCESS - Correctly returned error code 461 (Duplicate Order)");
+            _output.WriteLine($"  Error: {body.Error!.Message}");
+
+            _client.DefaultRequestHeaders.Authorization = null;
         }
         catch (Exception ex)
         {

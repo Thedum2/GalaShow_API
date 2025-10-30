@@ -569,6 +569,208 @@ Resources:
             Path: /chzzk/{proxy+}
             Method: ANY
 
+  DevMinigameFunction:
+    Condition: IsDev
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Minigame.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: DevMinigameFunction
+      CodeUri: src/GalaShow.Minigame/
+      Handler: GalaShow.Minigame::GalaShow.Minigame.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetMinigames:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames
+            Method: get
+        CreateMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames
+            Method: post
+        GetMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}
+            Method: get
+        UpdateMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}
+            Method: put
+        DeleteMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}
+            Method: delete
+        GetSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: get
+        AddSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: post
+        UpdateSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: put
+        GetViewerAvatars:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /viewer-avatars
+            Method: get
+        UpdateViewerAvatars:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /viewer-avatars
+            Method: put
+        OptionsMinigames:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames
+            Method: options
+        OptionsMinigameId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}
+            Method: options
+        OptionsSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: options
+        OptionsViewerAvatars:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DevApi
+            Path: /viewer-avatars
+            Method: options
+
+  ProdMinigameFunction:
+    Condition: IsProd
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+      BuildProperties:
+        ProjectFile: GalaShow.Minigame.csproj
+        Framework: net8.0
+    Properties:
+      FunctionName: ProdMinigameFunction
+      CodeUri: src/GalaShow.Minigame/
+      Handler: GalaShow.Minigame::GalaShow.Minigame.Function::FunctionHandler
+      Runtime: dotnet8
+      Policies:
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      Events:
+        GetMinigames:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames
+            Method: get
+        CreateMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames
+            Method: post
+        GetMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}
+            Method: get
+        UpdateMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}
+            Method: put
+        DeleteMinigame:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}
+            Method: delete
+        GetSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: get
+        AddSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: post
+        UpdateSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: put
+        GetViewerAvatars:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /viewer-avatars
+            Method: get
+        UpdateViewerAvatars:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /viewer-avatars
+            Method: put
+        OptionsMinigames:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames
+            Method: options
+        OptionsMinigameId:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}
+            Method: options
+        OptionsSurvivalRate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /minigames/{gameId}/survival-rate
+            Method: options
+        OptionsViewerAvatars:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ProdApi
+            Path: /viewer-avatars
+            Method: options
+
   ### Dev Custom Domain
   DevDomain:
     Condition: IsDev
