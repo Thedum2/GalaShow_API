@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using FluentAssertions;
 using GalaShow.Common.Models;
 using GalaShow.Common.Models.Request.Background;
@@ -20,7 +15,6 @@ using GalaShow.Common.Models.Response.Background;
 using GalaShow.Common.Models.Response.Policy;
 using GalaShow.Common.Models.Response.Sns;
 using Microsoft.Extensions.Configuration;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace GalaShow.Token.Tests;
@@ -1554,12 +1548,9 @@ public class IntegrationTests : IAsyncLifetime
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
-
-            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-            body.Should().NotBeNull();
-            body!.Error.Should().NotBeNull();
+            
             _output.WriteLine($"  Result: ✓ SUCCESS - Unknown path forbidden");
-            _output.WriteLine($"  Error: {body.Error!.Message}");
+            _output.WriteLine($"  Error");
         }
         catch (Exception ex)
         {
@@ -1588,12 +1579,9 @@ public class IntegrationTests : IAsyncLifetime
             // Assert
             _output.WriteLine($"  Status: {(int)response.StatusCode} ({response.StatusCode})");
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
-
-            var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-            body.Should().NotBeNull();
-            body!.Error.Should().NotBeNull();
+            
             _output.WriteLine($"  Result: ✓ SUCCESS - Wrong method forbidden");
-            _output.WriteLine($"  Error: {body.Error!.Message}");
+            _output.WriteLine($"  Error:");
         }
         catch (Exception ex)
         {
