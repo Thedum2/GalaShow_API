@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using GalaShow.Common.Models.Request.Minigame;
 
@@ -22,6 +23,12 @@ namespace GalaShow.Common.Models.Response.Minigame
 
         [JsonPropertyName("tags")]
         public MinigameTagsDto Tags { get; set; } = new();
+
+        [JsonPropertyName("phaseData")]
+        public JsonElement? PhaseData { get; set; }
+
+        [JsonPropertyName("gameData")]
+        public JsonElement? GameData { get; set; }
 
         [JsonPropertyName("tutorial")]
         public List<MinigameTutorialDto> Tutorial { get; set; } = new();

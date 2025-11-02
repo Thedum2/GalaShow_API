@@ -48,6 +48,8 @@ namespace GalaShow.Common.Service
                 VideoUrl = m.VideoUrl,
                 LogoUrl = m.LogoUrl,
                 Tags = tagsByGame.ContainsKey(m.Id) ? tagsByGame[m.Id] : new MinigameTagsDto(),
+                PhaseData = string.IsNullOrEmpty(m.PhaseData) ? null : System.Text.Json.JsonDocument.Parse(m.PhaseData).RootElement,
+                GameData = string.IsNullOrEmpty(m.GameData) ? null : System.Text.Json.JsonDocument.Parse(m.GameData).RootElement,
                 CreatedAt = m.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 UpdatedAt = m.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")
             }).ToList();
@@ -78,6 +80,8 @@ namespace GalaShow.Common.Service
                 VideoUrl = minigame.VideoUrl,
                 LogoUrl = minigame.LogoUrl,
                 Tags = tagsByGame.ContainsKey(gameId) ? tagsByGame[gameId] : new MinigameTagsDto(),
+                PhaseData = string.IsNullOrEmpty(minigame.PhaseData) ? null : System.Text.Json.JsonDocument.Parse(minigame.PhaseData).RootElement,
+                GameData = string.IsNullOrEmpty(minigame.GameData) ? null : System.Text.Json.JsonDocument.Parse(minigame.GameData).RootElement,
                 Tutorial = tutorials.Select(t => new MinigameTutorialDto
                 {
                     Step = t.Step,

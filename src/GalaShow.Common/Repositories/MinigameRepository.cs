@@ -43,7 +43,7 @@ namespace GalaShow.Common.Repositories
 
             // 목록 조회
             var sql = $@"
-                SELECT DISTINCT m.id, m.name, m.description, m.video_url, m.logo_url, m.created_at, m.updated_at
+                SELECT DISTINCT m.id, m.name, m.description, m.video_url, m.logo_url, m.phase_data, m.game_data, m.created_at, m.updated_at
                 FROM minigames m
                 LEFT JOIN minigame_tags mt ON m.id = mt.minigame_id
                 {whereClause}
@@ -60,6 +60,8 @@ namespace GalaShow.Common.Repositories
                     Description = reader.GetString("description"),
                     VideoUrl = reader.GetString("video_url"),
                     LogoUrl = reader.GetString("logo_url"),
+                    PhaseData = reader.IsDBNull(reader.GetOrdinal("phase_data")) ? string.Empty : reader.GetString("phase_data"),
+                    GameData = reader.IsDBNull(reader.GetOrdinal("game_data")) ? string.Empty : reader.GetString("game_data"),
                     CreatedAt = reader.GetDateTime("created_at"),
                     UpdatedAt = reader.GetDateTime("updated_at")
                 });
@@ -124,7 +126,7 @@ namespace GalaShow.Common.Repositories
         public async Task<Minigame?> GetByIdAsync(int id)
         {
             const string sql = @"
-                SELECT id, name, description, video_url, logo_url, created_at, updated_at
+                SELECT id, name, description, video_url, logo_url, phase_data, game_data, created_at, updated_at
                 FROM minigames
                 WHERE id = @id";
 
@@ -140,6 +142,8 @@ namespace GalaShow.Common.Repositories
                     Description = reader.GetString("description"),
                     VideoUrl = reader.GetString("video_url"),
                     LogoUrl = reader.GetString("logo_url"),
+                    PhaseData = reader.IsDBNull(reader.GetOrdinal("phase_data")) ? string.Empty : reader.GetString("phase_data"),
+                    GameData = reader.IsDBNull(reader.GetOrdinal("game_data")) ? string.Empty : reader.GetString("game_data"),
                     CreatedAt = reader.GetDateTime("created_at"),
                     UpdatedAt = reader.GetDateTime("updated_at")
                 };
@@ -226,16 +230,21 @@ namespace GalaShow.Common.Repositories
             {
                 // 1. 미니게임 기본 정보 생성
                 const string insertMinigame = @"
-                    INSERT INTO minigames (name, description, video_url, logo_url)
-                    VALUES (@name, @description, @videoUrl, @logoUrl);
+                    INSERT INTO minigames (name, description, video_url, logo_url, phase_data, game_data)
+                    VALUES (@name, @description, @videoUrl, @logoUrl, @phaseData, @gameData);
                     SELECT LAST_INSERT_ID();";
+
+                var phaseDataJson = request.PhaseData.HasValue ? request.PhaseData.Value.GetRawText() : "{}";
+                var gameDataJson = request.GameData.HasValue ? request.GameData.Value.GetRawText() : "{}";
 
                 var p = new[]
                 {
                     new MySqlParameter("@name", MySqlDbType.VarChar) { Value = request.Name },
                     new MySqlParameter("@description", MySqlDbType.Text) { Value = request.Description },
                     new MySqlParameter("@videoUrl", MySqlDbType.VarChar) { Value = request.VideoUrl },
-                    new MySqlParameter("@logoUrl", MySqlDbType.VarChar) { Value = request.LogoUrl }
+                    new MySqlParameter("@logoUrl", MySqlDbType.VarChar) { Value = request.LogoUrl },
+                    new MySqlParameter("@phaseData", MySqlDbType.JSON) { Value = phaseDataJson },
+                    new MySqlParameter("@gameData", MySqlDbType.JSON) { Value = gameDataJson }
                 };
 
                 minigameId = Convert.ToInt32(await DatabaseService.Instance.ExecuteScalarAsync<object>(insertMinigame, conn, tr, p));
@@ -268,8 +277,12 @@ namespace GalaShow.Common.Repositories
                 // 1. 기본 정보 수정
                 const string updateSql = @"
                     UPDATE minigames
-                    SET name = @name, description = @description, video_url = @videoUrl, logo_url = @logoUrl, updated_at = NOW()
+                    SET name = @name, description = @description, video_url = @videoUrl, logo_url = @logoUrl,
+                        phase_data = @phaseData, game_data = @gameData, updated_at = NOW()
                     WHERE id = @id";
+
+                var phaseDataJson = request.PhaseData.HasValue ? request.PhaseData.Value.GetRawText() : "{}";
+                var gameDataJson = request.GameData.HasValue ? request.GameData.Value.GetRawText() : "{}";
 
                 var p = new[]
                 {
@@ -277,7 +290,9 @@ namespace GalaShow.Common.Repositories
                     new MySqlParameter("@name", MySqlDbType.VarChar) { Value = request.Name },
                     new MySqlParameter("@description", MySqlDbType.Text) { Value = request.Description },
                     new MySqlParameter("@videoUrl", MySqlDbType.VarChar) { Value = request.VideoUrl },
-                    new MySqlParameter("@logoUrl", MySqlDbType.VarChar) { Value = request.LogoUrl }
+                    new MySqlParameter("@logoUrl", MySqlDbType.VarChar) { Value = request.LogoUrl },
+                    new MySqlParameter("@phaseData", MySqlDbType.JSON) { Value = phaseDataJson },
+                    new MySqlParameter("@gameData", MySqlDbType.JSON) { Value = gameDataJson }
                 };
 
                 await DatabaseService.Instance.ExecuteNonQueryAsync(updateSql, conn, tr, p);
