@@ -33,9 +33,14 @@ namespace GalaShow.Minigame
                 response = (req.HttpMethod, req.Path) switch
                 {
                     // [6-1] 미니게임 목록 조회
-                    ("GET", "/minigames") => await GetMinigames(req),
+                    ("GET", "/minigames") => await TokenService.Instance.RequireAuthThen(
+                        req,
+                        _ => GetMinigames(req),
+                        () => ErrorResults.Json(ErrorCode.AuthTokenExpired),
+                        () => ErrorResults.Json(ErrorCode.Unauthorized)
+                    ),
 
-                    // [6-2] 미니게임 상세 조회
+                    // [6-2] 미니게임 생성
                     ("POST", "/minigames") => await TokenService.Instance.RequireAuthThen(
                         req,
                         _ => CreateMinigame(req),
@@ -43,9 +48,14 @@ namespace GalaShow.Minigame
                         () => ErrorResults.Json(ErrorCode.Unauthorized)
                     ),
 
-                    // [6-3] 미니게임 생성
+                    // [6-3] 미니게임 상세 조회
                     ("GET", var p) when p.StartsWith("/minigames/") && p.EndsWith("/survival-rate") == false =>
-                        await GetMinigameDetail(req),
+                        await TokenService.Instance.RequireAuthThen(
+                            req,
+                            _ => GetMinigameDetail(req),
+                            () => ErrorResults.Json(ErrorCode.AuthTokenExpired),
+                            () => ErrorResults.Json(ErrorCode.Unauthorized)
+                        ),
 
                     // [6-4] 미니게임 수정
                     ("PUT", var p) when p.StartsWith("/minigames/") && p.Contains("/survival-rate") == false =>
@@ -66,7 +76,13 @@ namespace GalaShow.Minigame
                         ),
 
                     // [6-6] 미니게임 생존률 조회
-                    ("GET", var p) when p.Contains("/survival-rate") => await GetSurvivalRate(req),
+                    ("GET", var p) when p.Contains("/survival-rate") =>
+                        await TokenService.Instance.RequireAuthThen(
+                            req,
+                            _ => GetSurvivalRate(req),
+                            () => ErrorResults.Json(ErrorCode.AuthTokenExpired),
+                            () => ErrorResults.Json(ErrorCode.Unauthorized)
+                        ),
 
                     // [6-7] 미니게임 생존률 데이터 추가
                     ("POST", var p) when p.Contains("/survival-rate") =>

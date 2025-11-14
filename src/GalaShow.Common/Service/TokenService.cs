@@ -78,6 +78,22 @@ namespace GalaShow.Common.Service
                 return onUnauthorized();
             }
 
+            // dev 환경에서 테스트 토큰 지원
+            var isDev = StageResolver.IsDev();
+            if (isDev && auth == "Bearer thisistesttoken")
+            {
+                Console.WriteLine("[Auth] Dev test token accepted.");
+                // 테스트 토큰으로 간단한 ClaimsPrincipal 생성
+                var claims = new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, "test-user"),
+                    new Claim(ClaimTypes.Role, "admin")
+                };
+                var identity = new ClaimsIdentity(claims, "TestToken");
+                var principal = new ClaimsPrincipal(identity);
+                return await next(principal);
+            }
+
             var (result, user) = JwtService.Instance.ValidateBearer(auth);
 
             switch (result)
