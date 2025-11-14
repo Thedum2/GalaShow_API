@@ -30,6 +30,12 @@ namespace GalaShow.Common.Models.Response.Minigame
         [JsonPropertyName("gameData")]
         public JsonElement? GameData { get; set; }
 
+        [JsonPropertyName("tutorial")]
+        public List<MinigameTutorialDto> Tutorial { get; set; } = new();
+
+        [JsonPropertyName("controls")]
+        public List<MinigameControlDto> Controls { get; set; } = new();
+
         [JsonPropertyName("createdAt")]
         public string CreatedAt { get; set; } = string.Empty;
 

@@ -39,6 +39,8 @@ namespace GalaShow.Common.Service
 
             var minigameIds = minigames.Select(m => m.Id).ToList();
             var tagsByGame = await _repo.GetTagsByMinigameIdsAsync(minigameIds);
+            var tutorialsByGame = await _repo.GetTutorialsByMinigameIdsAsync(minigameIds);
+            var controlsByGame = await _repo.GetControlsByMinigameIdsAsync(minigameIds);
 
             var items = minigames.Select(m => new MinigameListItemResponse
             {
@@ -50,6 +52,12 @@ namespace GalaShow.Common.Service
                 Tags = tagsByGame.ContainsKey(m.Id) ? tagsByGame[m.Id] : new MinigameTagsDto(),
                 PhaseData = string.IsNullOrEmpty(m.PhaseData) ? null : System.Text.Json.JsonDocument.Parse(m.PhaseData).RootElement,
                 GameData = string.IsNullOrEmpty(m.GameData) ? null : System.Text.Json.JsonDocument.Parse(m.GameData).RootElement,
+                Tutorial = tutorialsByGame.ContainsKey(m.Id)
+                    ? tutorialsByGame[m.Id].Select(t => new MinigameTutorialDto { Step = t.Step, Description = t.Description }).ToList()
+                    : new List<MinigameTutorialDto>(),
+                Controls = controlsByGame.ContainsKey(m.Id)
+                    ? controlsByGame[m.Id].Select(c => new MinigameControlDto { KeyName = c.KeyName, Key = c.Keys }).ToList()
+                    : new List<MinigameControlDto>(),
                 CreatedAt = m.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 UpdatedAt = m.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")
             }).ToList();

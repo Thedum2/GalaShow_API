@@ -221,6 +221,70 @@ namespace GalaShow.Common.Repositories
             return controls;
         }
 
+        public async Task<Dictionary<int, List<MinigameTutorial>>> GetTutorialsByMinigameIdsAsync(List<int> minigameIds)
+        {
+            if (minigameIds.Count == 0) return new Dictionary<int, List<MinigameTutorial>>();
+
+            var ids = string.Join(",", minigameIds);
+            var sql = $@"
+                SELECT id, minigame_id, step, description
+                FROM minigame_tutorials
+                WHERE minigame_id IN ({ids})
+                ORDER BY minigame_id, step ASC";
+
+            var tutorialsByGame = new Dictionary<int, List<MinigameTutorial>>();
+            await using var reader = await DatabaseService.Instance.ExecuteReaderAsync(sql);
+            while (await reader.ReadAsync())
+            {
+                var minigameId = reader.GetInt32("minigame_id");
+                if (!tutorialsByGame.ContainsKey(minigameId))
+                    tutorialsByGame[minigameId] = new List<MinigameTutorial>();
+
+                tutorialsByGame[minigameId].Add(new MinigameTutorial
+                {
+                    Id = reader.GetInt32("id"),
+                    MinigameId = minigameId,
+                    Step = reader.GetInt32("step"),
+                    Description = reader.GetString("description")
+                });
+            }
+
+            return tutorialsByGame;
+        }
+
+        public async Task<Dictionary<int, List<MinigameControl>>> GetControlsByMinigameIdsAsync(List<int> minigameIds)
+        {
+            if (minigameIds.Count == 0) return new Dictionary<int, List<MinigameControl>>();
+
+            var ids = string.Join(",", minigameIds);
+            var sql = $@"
+                SELECT id, minigame_id, key_name, `keys`
+                FROM minigame_controls
+                WHERE minigame_id IN ({ids})";
+
+            var controlsByGame = new Dictionary<int, List<MinigameControl>>();
+            await using var reader = await DatabaseService.Instance.ExecuteReaderAsync(sql);
+            while (await reader.ReadAsync())
+            {
+                var minigameId = reader.GetInt32("minigame_id");
+                if (!controlsByGame.ContainsKey(minigameId))
+                    controlsByGame[minigameId] = new List<MinigameControl>();
+
+                var keysJson = reader.GetString("keys");
+                var keys = JsonSerializer.Deserialize<List<string>>(keysJson) ?? new List<string>();
+
+                controlsByGame[minigameId].Add(new MinigameControl
+                {
+                    Id = reader.GetInt32("id"),
+                    MinigameId = minigameId,
+                    KeyName = reader.GetString("key_name"),
+                    Keys = keys
+                });
+            }
+
+            return controlsByGame;
+        }
+
         // ==================== 미니게임 생성 ====================
         public async Task<int> CreateAsync(CreateMinigameRequest request)
         {
