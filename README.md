@@ -8,12 +8,6 @@ CI/CD는 `develop` 대상 PR에서 테스트하고, `develop`에 push하면 개�
 
 이 문서는 GalaShow API에 대한 개요를 제공하며, 인증 방법 및 각 엔드포인트에 대한 자세한 정보를 포함합니다.
 
-## 치지직 연동
-
-기존 `/chzzk` 경로에서 로그인·토큰 갱신/폐기·사용자/채널 조회·채팅 세션/이벤트 구독 API를 제공한다. 브라우저의 앱 비밀 키를 제거하고 서버의 Secrets Manager 설정을 사용한다. PolyChat의 `apiBaseUrl`은 개발 `https://api-dev.galashow.cloud/chzzk`, 운영 `https://api.galashow.cloud/chzzk`다.
-
-처음 배포할 때 `ChzzkSecretArn` 또는 GitHub Environment Variable `CHZZK_SECRET_ARN`을 설정한다. JSON 형식, 경로, 로컬 실행 및 변경된 프론트엔드 반영 순서는 [치지직 연동 안내](src/GalaShow.ChzzkProxy/README.md)와 [Client 안내](../Client/README.md)를 따른다. 기존 범용 프록시 경로는 새 계약으로 교체되었다.
-
 ## 인증 (Authentication)
 
 GalaShow API는 JWT(JSON Web Token)를 사용하여 인증합니다. 대부분의 엔드포인트는 `Authorization` 헤더에 Bearer 토큰으로 액세스 토큰을 포함해야 합니다.

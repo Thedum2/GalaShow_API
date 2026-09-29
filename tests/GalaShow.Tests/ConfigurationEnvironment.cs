@@ -9,8 +9,7 @@ public abstract class ConfigurationEnvironment : IDisposable
     [
         "STAGE", "AWS_SAM_LOCAL", "ASPNETCORE_ENVIRONMENT", "DOTNET_ENVIRONMENT",
         "AWS_LAMBDA_FUNCTION_NAME", "DB_HOST", "DB_PORT", "DB_NAME", "DB_SECRET_ARN",
-        "JWT_SECRET_ARN", "JWT_ISSUER", "JWT_AUDIENCE", "CORS_ALLOWED_ORIGINS",
-        "CHZZK_SECRET_ARN", "CHZZK_CLIENT_ID", "CHZZK_CLIENT_SECRET"
+        "JWT_SECRET_ARN", "JWT_ISSUER", "JWT_AUDIENCE", "CORS_ALLOWED_ORIGINS"
     ];
 
     private readonly Dictionary<string, string?> _originalValues =

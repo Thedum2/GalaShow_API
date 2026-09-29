@@ -10,7 +10,6 @@ public sealed class PreflightTests : ConfigurationEnvironment
     [InlineData("Token")]
     [InlineData("BackGround")]
     [InlineData("Banner")]
-    [InlineData("ChzzkProxy")]
     [InlineData("Minigame")]
     [InlineData("Policy")]
     [InlineData("Sns")]
@@ -23,7 +22,6 @@ public sealed class PreflightTests : ConfigurationEnvironment
             "Token" => new GalaShow.Token.Function().FunctionHandler,
             "BackGround" => new GalaShow.BackGround.Function().FunctionHandler,
             "Banner" => new GalaShow.Banner.Function().FunctionHandler,
-            "ChzzkProxy" => async (request, context) => await new GalaShow.ChzzkProxy.Function().FunctionHandler(request, context),
             "Minigame" => new GalaShow.Minigame.Function().FunctionHandler,
             "Policy" => new GalaShow.Policy.Function().FunctionHandler,
             "Sns" => new GalaShow.Sns.Function().FunctionHandler,

@@ -26,7 +26,7 @@ public static class CorsHandler
         if (response is null) return null;
         response.Headers ??= new Dictionary<string, string>();
 
-        // The proxy must apply our allowlist even when the upstream sends CORS headers.
+        // Always apply the configured origin allowlist to response headers.
         foreach (var key in response.Headers.Keys.Where(key => key.StartsWith("Access-Control-", StringComparison.OrdinalIgnoreCase)).ToArray())
             response.Headers.Remove(key);
 
@@ -41,7 +41,7 @@ public static class CorsHandler
         {
             response.Headers["Access-Control-Allow-Origin"] = origin;
             response.Headers["Access-Control-Allow-Credentials"] = "true";
-            response.Headers["Access-Control-Allow-Headers"] = "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Client-Id,Client-Secret";
+            response.Headers["Access-Control-Allow-Headers"] = "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token";
             response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
         }
 

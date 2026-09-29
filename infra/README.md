@@ -21,7 +21,7 @@
 
 S3 웹 버킷은 OAC로 해당 CloudFront에서만 읽는다. API 패키지는 별도 버킷에 저장하여 웹에 노출되지 않는다. React 경로는 CloudFront Function으로 `/index.html`에 연결하며 `/assets/`, `/build/`와 확장자가 있는 파일의 오류는 HTML로 바꾸지 않는다.
 
-DB는 Lambda 보안 그룹의 TCP 3306 연결만 허용한다. Lambda의 비밀 조회는 HTTPS VPC endpoint를 사용한다. CHZZK 프록시는 DB/JWT 초기화를 하지 않고 VPC 밖에서 외부 API를 호출한다. 사용자 요청에 따라 개발/운영 모두 자동 백업 보존을 0일로 설정하고 삭제·교체 시 스냅샷을 생성하지 않는다. 자동 백업도 인스턴스 삭제 시 제거한다. 운영 인스턴스의 삭제 방지는 유지한다. 기본 DB 크기는 `db.t4g.micro`, 20 GiB(gp3), 자동 확장 상한 100 GiB, Single-AZ이며 `MultiAZ=true`로 변경할 수 있다. 백업을 꺼도 DB 본체·저장공간과 endpoint 등의 AWS 사용 요금은 발생한다.
+DB는 Lambda 보안 그룹의 TCP 3306 연결만 허용한다. Lambda의 비밀 조회는 HTTPS VPC endpoint를 사용한다. 사용자 요청에 따라 개발/운영 모두 자동 백업 보존을 0일로 설정하고 삭제·교체 시 스냅샷을 생성하지 않는다. 자동 백업도 인스턴스 삭제 시 제거한다. 운영 인스턴스의 삭제 방지는 유지한다. 기본 DB 크기는 `db.t4g.micro`, 20 GiB(gp3), 자동 확장 상한 100 GiB, Single-AZ이며 `MultiAZ=true`로 변경할 수 있다. 백업을 꺼도 DB 본체·저장공간과 endpoint 등의 AWS 사용 요금은 발생한다.
 
 ## 준비
 
@@ -60,6 +60,8 @@ foreach ($stage in 'dev', 'prod') {
 
 DB 비밀번호와 JWT 키는 Secrets Manager에서 생성한다. 현재 애플리케이션은 값을 실행 환경에 캐시하므로 자동 회전을 구성하지 않는다. 수동 회전 시 RDS 비밀번호/Secret을 함께 변경하고 Lambda 실행 환경도 갱신해야 한다.
 
+기존 스택에서 제거되는 Lambda가 있으면 해당 함수 삭제 권한을 가진 기존 배포 역할로 API 스택부터 갱신한다. 그 다음 `github-actions.json`의 축소된 배포 권한을 적용한다. 이 순서를 반대로 하면 이전 함수 삭제 권한이 사라져 스택 갱신이 실패할 수 있다.
+
 ## API CI/CD
 
 [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)의 `GalaShow API CI/CD`가 다음 순서로 실행된다.
@@ -84,7 +86,6 @@ DB 비밀번호와 JWT 키는 Secrets Manager에서 생성한다. 현재 애플�
 | Variable | `HOSTED_ZONE_ID` | `Z0263745GATMIS12FEIH` — 현재 `galashow.cloud` 공개 호스팅 영역 |
 | Variable | `AWS_ACCOUNT_ID` | `251113431583` — 현재 배포 스택이 있는 계정 |
 | Variable | `AWS_ROLE_ARN` | `arn:aws:iam::251113431583:role/galashow-github-api-dev` 또는 `galashow-github-api-prod` |
-| Variable | `CHZZK_SECRET_ARN` | 치지직 앱 JSON(`clientId`, `clientSecret`)을 저장한 환경별 Secrets Manager ARN. 치지직 연동 시 필요 |
 
 워크플로는 GitHub OIDC의 단기 자격증명을 사용한다. 배포 job만 `id-token: write`를 가지며 IAM 신뢰 정책은 `repo:Thedum2/GalaShow_API:environment:dev` 또는 `prod`로 제한한다. 계정이 `AWS_ACCOUNT_ID`와 다르면 배포 전에 실패한다. 로컬 `galashow` 로그인 세션은 GitHub Actions로 전달되지 않는다. 역할과 권한의 재현 방법은 [GitHub 배포 권한 설정](github-actions-setup.md)을 따른다.
 
@@ -107,16 +108,6 @@ DB 비밀번호와 JWT 키는 Secrets Manager에서 생성한다. 현재 애플�
 ./infra/deploy-api.ps1 -Stage dev -HostedZoneId 'Z0263745GATMIS12FEIH' -Profile galashow
 python infra/smoke-test.py --stage dev --api-only --allow-empty
 ```
-
-## 치지직 앱 설정
-
-치지직 연동 Lambda는 기존 `/chzzk` API와 배포 리소스를 재사용한다. 앱의 `clientId`와 `clientSecret`은 서버의 Secrets Manager JSON에 저장하고, 클라이언트에는 `/chzzk/config`의 공개 ID만 전달한다. `VITE_*` 변수나 브라우저 입력으로 앱 비밀 키를 넘기지 않는다.
-
-첫 설정 또는 ARN 변경 시 `./infra/deploy-api.ps1 -Stage dev -HostedZoneId $zoneId -ChzzkSecretArn '<dev-secret-arn>'`을 실행한다. CI는 Environment Variable `CHZZK_SECRET_ARN`을 같은 인자로 전달한다. 생략하면 기존 스택 값이 유지되고, 신규 스택의 기본값은 비어 있다. 앱 설정이 없으면 치지직 앱 키가 필요한 기능은 503을 반환한다. ARN을 전달했다고 secret이 생성되지는 않는다.
-
-SAM은 해당 Lambda에 지정한 secret의 `GetSecretValue`만 허용한다. CHZZK는 DB/JWT를 초기화하지 않고 VPC 밖에서 Secrets Manager와 치지직 API에 접속한다. 키는 5분간 캐시한다. JSON 예시, Redirect URI, 로컬 서버 환경변수는 [치지직 연동 안내](../src/GalaShow.ChzzkProxy/README.md)를 따른다.
-
-API와 PolyChat/Client의 HTTP 계약이 함께 변경되므로 해당 변경을 함께 릴리스한다. PolyChat 코드를 먼저 원격에 반영하고 Client CI에서 참조하는 revision을 맞춘 뒤 API와 Client를 배포한다. 기존 프록시를 쓰는 구버전 Client는 새 API와 호환되지 않는다.
 
 ## 웹 배포
 

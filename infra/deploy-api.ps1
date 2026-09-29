@@ -3,7 +3,6 @@ param(
     [Parameter(Mandatory)][string]$HostedZoneId,
     [string]$Profile = 'galashow',
     [string]$Region = 'ap-northeast-2',
-    [string]$ChzzkSecretArn = '',
     [switch]$SkipBuild
 )
 
@@ -66,10 +65,6 @@ try {
     Invoke-Aws -Arguments @('cloudformation', 'package', '--template-file', $localTemplate,
         '--s3-bucket', $artifacts.BucketName, '--s3-prefix', "api/$Stage", '--output-template-file', $packagedTemplate)
     $parameters = @("StageNameParam=$Stage", "HostedZoneId=$HostedZoneId")
-    # Omitted overrides preserve an existing stack parameter; a new stack uses its default.
-    if (-not [string]::IsNullOrWhiteSpace($ChzzkSecretArn)) {
-        $parameters += "ChzzkSecretArn=$ChzzkSecretArn"
-    }
     foreach ($key in @('DatabaseHost', 'DatabasePort', 'DatabaseName', 'DatabaseSecretArn', 'JwtSecretArn', 'LambdaSecurityGroupId', 'PrivateSubnetIds')) {
         if (-not $database[$key]) { throw "Missing database stack output: $key" }
         $parameters += "$key=$($database[$key])"
