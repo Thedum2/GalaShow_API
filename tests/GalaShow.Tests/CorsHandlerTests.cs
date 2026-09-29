@@ -35,8 +35,8 @@ public sealed class CorsHandlerTests : ConfigurationEnvironment
     [InlineData("prod", "https://admin.galashow.cloud", true)]
     [InlineData("prod", "https://dev.galashow.cloud", false)]
     [InlineData("prod", "https://admin-dev.galashow.cloud", false)]
-    [InlineData("prod", "http://localhost:5173", false)]
-    [InlineData("prod", "http://localhost:3000", false)]
+    [InlineData("prod", "http://localhost:5173", true)]
+    [InlineData("prod", "http://localhost:3000", true)]
     [InlineData("prod", "https://galashow.cloud.attacker.example", false)]
     [InlineData("prod", "null", false)]
     public async Task Cors_DefaultOriginsAreIsolatedByStage(string stage, string origin, bool allowed)
@@ -71,6 +71,26 @@ public sealed class CorsHandlerTests : ConfigurationEnvironment
     [InlineData("http://localhost:8080")]
     [InlineData("https://localhost")]
     [InlineData("https://localhost:8443")]
+    [InlineData("http://127.0.0.1:8080")]
+    [InlineData("http://[::1]:5173")]
+    public async Task Cors_AllowsLocalhostRegardlessOfPortInEveryStage(string origin)
+    {
+        foreach (var stage in new[] { "dev", "prod" })
+        {
+            Set("STAGE", stage);
+            Set("CORS_ALLOWED_ORIGINS", stage == "dev" ? "https://dev.galashow.cloud" : "https://galashow.cloud");
+            StageResolver.Resolve();
+            await CorsHandler.InitializeAsync();
+
+            var response = CorsHandler.AddCorsHeaders(Request(origin), new APIGatewayProxyResponse());
+
+            Assert.Equal(origin, response!.Headers["Access-Control-Allow-Origin"]);
+            Assert.Equal("true", response.Headers["Access-Control-Allow-Credentials"]);
+        }
+    }
+
+    [Theory]
+    [InlineData("http://localhost")]
     public async Task Cors_DevelopmentAllowsLocalhostRegardlessOfPort(string origin)
     {
         Set("STAGE", "dev");
@@ -100,7 +120,7 @@ public sealed class CorsHandlerTests : ConfigurationEnvironment
     }
 
     [Fact]
-    public async Task Cors_ProductionNeverAllowsLocalDevelopmentOrigins()
+    public async Task Cors_ProductionAllowsLocalDevelopmentOrigins()
     {
         Set("STAGE", "prod");
         Set("CORS_ALLOWED_ORIGINS", "https://galashow.cloud,http://localhost:5173,http://localhost:3000");
@@ -109,7 +129,7 @@ public sealed class CorsHandlerTests : ConfigurationEnvironment
 
         var response = CorsHandler.AddCorsHeaders(Request("http://localhost:5173"), new APIGatewayProxyResponse());
 
-        Assert.False(response!.Headers.ContainsKey("Access-Control-Allow-Origin"));
+        Assert.Equal("http://localhost:5173", response!.Headers["Access-Control-Allow-Origin"]);
     }
 
     [Fact]

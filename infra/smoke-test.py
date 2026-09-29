@@ -32,10 +32,8 @@ def check(stage, allow_empty=False, api_only=False):
         assert status in (403, 404) and "text/html" not in headers.get("Content-Type", ""), status
 
     local_origins = ["http://localhost:8080", "https://localhost:8443"]
-    allowed_origins = [origin, admin] + (local_origins if stage == "dev" else [])
+    allowed_origins = [origin, admin] + local_origins
     rejected_origins = [other_origin, "https://untrusted.example", "http://localhost.untrusted.example:8080"]
-    if stage == "prod":
-        rejected_origins += local_origins
 
     for allowed in allowed_origins:
         status, headers, _ = request(api + "/banners", "OPTIONS", {

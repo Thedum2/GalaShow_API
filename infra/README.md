@@ -54,7 +54,7 @@ foreach ($stage in 'dev', 'prod') {
 
 `deploy-api.ps1`은 해당 환경 DB 스택의 출력에서 연결 정보를 읽고, 각 .NET 함수를 Linux x64용으로 publish한 뒤 AWS CLI로 패키징/배포한다. 비밀번호와 JWT 키는 소스·배포 인자에 포함하지 않는다. 빌드 결과는 Git에서 제외된 `.aws-sam/`에 저장한다. 두 번째 환경 배포에서만 `-SkipBuild`로 같은 코드 빌드를 재사용할 수 있다. 코드를 수정했다면 다시 빌드한다.
 
-필수 Lambda 환경변수는 `STAGE`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_SECRET_ARN`, `JWT_SECRET_ARN`, `CORS_ALLOWED_ORIGINS`다. 이전 계정의 DB/ARN으로 돌아가는 기본값은 없다. 개발/운영 CORS를 분리하고, 개발에서만 목록 설정과 관계없이 `http://localhost`, `https://localhost`의 모든 포트를 허용한다. 운영에서는 loopback origin을 허용하지 않는다.
+필수 Lambda 환경변수는 `STAGE`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_SECRET_ARN`, `JWT_SECRET_ARN`, `CORS_ALLOWED_ORIGINS`다. 이전 계정의 DB/ARN으로 돌아가는 기본값은 없다. 웹 origin은 개발(`dev`, `admin-dev`)과 운영(루트, `admin`)으로 분리한다. 로컬 개발을 위해 개발/운영 모두 목록 설정과 관계없이 `http(s)://localhost`, `127.0.0.1`, `[::1]`의 모든 포트를 허용한다.
 
 새 DB 생성 후 [DB 초기화 안내](../database/README.md)의 수동 Lambda 호출을 **각 빈 DB에 한 번** 실행한다. 초기화 함수는 API Gateway에 연결하지 않는다. `{"action":"initialize"}`는 빈 DB에 v001 테이블과 v002 배너 슬롯을 생성하며, 성공 시 `schemaVersion=v002`, `result=initialized`, `tableCount=11`, `bannerSlotCount=10`을 확인한다. 기존 테이블이 있으면 초기화를 거부한다. 이미 v001을 적용한 DB에는 `{"action":"migrate-banner-slots"}`를 호출해 누락된 배너 슬롯만 추가한다. 기존 문구와 정렬은 보존한다.
 
@@ -75,7 +75,7 @@ DB 비밀번호와 JWT 키는 Secrets Manager에서 생성한다. 현재 애플�
 
 배포 job만 AWS 자격증명과 `dev`/`prod` GitHub Environment를 사용한다. 환경별 배포를 직렬화하고 진행 중인 CloudFormation 배포는 새 push로 취소하지 않는다. 테스트 결과는 Actions의 `test-results-*` 아티팩트로 14일간 보관한다.
 
-배포 후에는 API만 읽기 요청으로 점검한다. Client/Admin 배포 상태에 의존하지 않으며, 배너 슬롯 1~10과 SNS/배경 조회, 환경별 CORS를 확인한다. 개발의 localhost 임의 포트 허용과 운영의 localhost 차단도 검사한다. 배경 콘텐츠 미등록 시 451만 허용하며, 배너 오류나 누락된 슬롯은 실패로 처리한다. 이 점검이 실패하면 워크플로도 실패하지만, 이미 완료된 CloudFormation 배포를 자동으로 되돌리지는 않는다.
+배포 후에는 API만 읽기 요청으로 점검한다. Client/Admin 배포 상태에 의존하지 않으며, 배너 슬롯 1~10과 SNS/배경 조회, 환경별 CORS를 확인한다. 양쪽 환경의 localhost 임의 포트 허용과 다른 환경 origin 차단도 검사한다. 배경 콘텐츠 미등록 시 451만 허용하며, 배너 오류나 누락된 슬롯은 실패로 처리한다. 이 점검이 실패하면 워크플로도 실패하지만, 이미 완료된 CloudFormation 배포를 자동으로 되돌리지는 않는다.
 
 ### GitHub 최초 설정
 

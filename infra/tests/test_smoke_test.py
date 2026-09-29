@@ -19,7 +19,7 @@ class ApiSmokeTests(unittest.TestCase):
         allowed = {"https://dev.galashow.cloud", "https://admin-dev.galashow.cloud"} if stage == "dev" else {
             "https://galashow.cloud", "https://admin.galashow.cloud"
         }
-        if stage == "dev" and not deny_localhost:
+        if not deny_localhost:
             allowed.update({"http://localhost:8080", "https://localhost:8443"})
 
         def respond(url, method="GET", headers=None):
@@ -53,14 +53,15 @@ class ApiSmokeTests(unittest.TestCase):
         with patch.object(smoke_test, "request", side_effect=self.api_response("dev")):
             self.check_api("dev")
 
-    def test_api_only_checks_prod_with_localhost_denied(self):
+    def test_api_only_checks_prod_with_localhost_allowed(self):
         with patch.object(smoke_test, "request", side_effect=self.api_response("prod")):
             self.check_api("prod")
 
-    def test_dev_fails_when_arbitrary_localhost_ports_are_denied(self):
-        with patch.object(smoke_test, "request", side_effect=self.api_response("dev", deny_localhost=True)):
-            with self.assertRaises(AssertionError):
-                self.check_api("dev")
+    def test_fails_when_arbitrary_localhost_ports_are_denied(self):
+        for stage in ("dev", "prod"):
+            with self.subTest(stage=stage), patch.object(smoke_test, "request", side_effect=self.api_response(stage, deny_localhost=True)):
+                with self.assertRaises(AssertionError):
+                    self.check_api(stage)
 
     def test_fails_when_untrusted_origins_are_allowed(self):
         for stage in ("dev", "prod"):

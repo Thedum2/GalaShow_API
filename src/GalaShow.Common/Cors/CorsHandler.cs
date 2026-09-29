@@ -15,7 +15,6 @@ public static class CorsHandler
             : "https://galashow.cloud,https://admin.galashow.cloud";
         _allowedOrigins = (configured ?? defaults)
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Where(origin => StageResolver.IsDev() || !Uri.TryCreate(origin, UriKind.Absolute, out var uri) || !uri.IsLoopback)
             .ToHashSet(StringComparer.Ordinal);
         return Task.CompletedTask;
     }
@@ -37,7 +36,7 @@ public static class CorsHandler
 
         var origin = request.Headers?.FirstOrDefault(h => h.Key.Equals("Origin", StringComparison.OrdinalIgnoreCase)).Value;
         if (origin is not null &&
-            (_allowedOrigins.Contains(origin) || (StageResolver.IsDev() && IsLocalhostOrigin(origin))))
+            (_allowedOrigins.Contains(origin) || IsLocalhostOrigin(origin)))
         {
             response.Headers["Access-Control-Allow-Origin"] = origin;
             response.Headers["Access-Control-Allow-Credentials"] = "true";
@@ -48,8 +47,9 @@ public static class CorsHandler
         return response;
     }
 
+    // Local development (localhost, 127.0.0.1, [::1] on any port) is allowed in every stage.
     private static bool IsLocalhostOrigin(string origin) =>
         Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
-        uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
+        uri.IsLoopback;
 }
