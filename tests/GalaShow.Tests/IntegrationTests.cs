@@ -21,6 +21,7 @@ using Xunit.Abstractions;
 
 namespace GalaShow.Token.Tests;
 
+[Trait("Category", "Integration")]
 public class IntegrationTests : IAsyncLifetime
 {
     private readonly HttpClient _client;

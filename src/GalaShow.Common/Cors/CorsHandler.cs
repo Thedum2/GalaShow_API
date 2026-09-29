@@ -1,24 +1,43 @@
+using System.Diagnostics.CodeAnalysis;
 using Amazon.Lambda.APIGatewayEvents;
-using GalaShow.Common.Configuration;
-using GalaShow.Common.Service;
 
 namespace GalaShow.Common.Cors;
 
 public static class CorsHandler
 {
-    private static List<string> _allowedOrigins = new();
+    private static HashSet<string> _allowedOrigins = new(StringComparer.Ordinal);
 
-    public static async Task InitializeAsync()
+    public static Task InitializeAsync()
     {
-        const string secretArn = "arn:aws:secretsmanager:ap-northeast-2:610495549763:secret:galashow/cors-JUg1XU";
-        _allowedOrigins = await SecretsService.Instance.GetCorsAllowedOriginsAsync(secretArn, StageResolver.IsDev()?"dev":"prod");
+        var configured = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+        var defaults = StageResolver.IsDev()
+            ? "https://dev.galashow.cloud,https://admin-dev.galashow.cloud"
+            : "https://galashow.cloud,https://admin.galashow.cloud";
+        _allowedOrigins = (configured ?? defaults)
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Where(origin => StageResolver.IsDev() || !Uri.TryCreate(origin, UriKind.Absolute, out var uri) || !uri.IsLoopback)
+            .ToHashSet(StringComparer.Ordinal);
+        return Task.CompletedTask;
     }
 
+    [return: NotNullIfNotNull(nameof(response))]
     public static APIGatewayProxyResponse? AddCorsHeaders(APIGatewayProxyRequest request, APIGatewayProxyResponse? response)
     {
-        var origin = request.Headers.FirstOrDefault(h => h.Key.Equals("origin", StringComparison.OrdinalIgnoreCase)).Value ?? "";
+        if (response is null) return null;
+        response.Headers ??= new Dictionary<string, string>();
 
-        if (_allowedOrigins.Contains(origin))
+        // The proxy must apply our allowlist even when the upstream sends CORS headers.
+        foreach (var key in response.Headers.Keys.Where(key => key.StartsWith("Access-Control-", StringComparison.OrdinalIgnoreCase)).ToArray())
+            response.Headers.Remove(key);
+
+        var vary = response.Headers.FirstOrDefault(h => h.Key.Equals("Vary", StringComparison.OrdinalIgnoreCase));
+        var varyValues = (vary.Value ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (!varyValues.Contains("Origin", StringComparer.OrdinalIgnoreCase))
+            response.Headers[vary.Key ?? "Vary"] = string.IsNullOrWhiteSpace(vary.Value) ? "Origin" : $"{vary.Value}, Origin";
+
+        var origin = request.Headers?.FirstOrDefault(h => h.Key.Equals("Origin", StringComparison.OrdinalIgnoreCase)).Value;
+        if (origin is not null &&
+            (_allowedOrigins.Contains(origin) || (StageResolver.IsDev() && IsLocalhostOrigin(origin))))
         {
             response.Headers["Access-Control-Allow-Origin"] = origin;
             response.Headers["Access-Control-Allow-Credentials"] = "true";
@@ -28,4 +47,9 @@ public static class CorsHandler
 
         return response;
     }
+
+    private static bool IsLocalhostOrigin(string origin) =>
+        Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
+        uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
 }

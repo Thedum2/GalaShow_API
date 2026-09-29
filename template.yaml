@@ -9,17 +9,78 @@ Parameters:
     AllowedValues:
       - dev
       - prod
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Public Route 53 hosted zone for galashow.cloud
+  DatabaseHost:
+    Type: String
+    MinLength: 1
+  DatabasePort:
+    Type: Number
+    Default: 3306
+    MinValue: 1
+    MaxValue: 65535
+  DatabaseName:
+    Type: String
+    Default: galashow
+  DatabaseSecretArn:
+    Type: String
+    AllowedPattern: 'arn:aws:secretsmanager:.*'
+  JwtSecretArn:
+    Type: String
+    AllowedPattern: 'arn:aws:secretsmanager:.*'
+  ChzzkSecretArn:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|arn:aws:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+'
+    Description: Optional CHZZK app secret JSON containing clientId and clientSecret
+  LambdaSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
 
 Conditions:
   IsDev:  !Equals [ !Ref StageNameParam, dev ]
   IsProd: !Equals [ !Ref StageNameParam, prod ]
+  HasChzzkSecret: !Not [ !Equals [ !Ref ChzzkSecretArn, '' ] ]
 
 Globals:
   Function:
     Timeout: 30
     MemorySize: 512
+    Environment:
+      Variables:
+        STAGE: !Ref StageNameParam
+        DB_HOST: !Ref DatabaseHost
+        DB_PORT: !Ref DatabasePort
+        DB_NAME: !Ref DatabaseName
+        DB_SECRET_ARN: !Ref DatabaseSecretArn
+        JWT_SECRET_ARN: !Ref JwtSecretArn
+        CORS_ALLOWED_ORIGINS: !If
+          - IsDev
+          - 'https://dev.galashow.cloud,https://admin-dev.galashow.cloud'
+          - 'https://galashow.cloud,https://admin.galashow.cloud'
 
 Resources:
+  DatabaseInitializer:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: dotnet8
+    Properties:
+      FunctionName: !Sub galashow-cloud-${StageNameParam}-database-initializer
+      CodeUri: database/Initializer/
+      Handler: GalaShow.DatabaseInitializer::GalaShow.DatabaseInitializer.Function::FunctionHandler
+      Runtime: dotnet8
+      Timeout: 180
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref DatabaseSecretArn
   
   
   DevApi:
@@ -28,7 +89,7 @@ Resources:
     Properties:
       Name: Galashow-dev
       StageName: dev
-      Description: "Force new deployment at 2025-09-17"
+      Description: Development API for dev.galashow.cloud
       BinaryMediaTypes:
         - "multipart/form-data"
         - "multipart/*"
@@ -60,8 +121,15 @@ Resources:
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
       
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetBanners:
           Type: Api
@@ -101,8 +169,15 @@ Resources:
       CodeUri: src/GalaShow.Banner/
       Handler: GalaShow.Banner::GalaShow.Banner.Function::FunctionHandler
       Runtime: dotnet8
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetBanners:
           Type: Api
@@ -143,8 +218,15 @@ Resources:
       Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
       Runtime: dotnet8
       
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         Login:
           Type: Api
@@ -208,8 +290,15 @@ Resources:
       CodeUri: src/GalaShow.Token/
       Handler: GalaShow.Token::GalaShow.Token.Function::FunctionHandler
       Runtime: dotnet8
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         Login:
           Type: Api
@@ -274,8 +363,15 @@ Resources:
       Handler: GalaShow.BackGround::GalaShow.BackGround.Function::FunctionHandler
       Runtime: dotnet8
       
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetBackgroundVideos:
           Type: Api
@@ -315,8 +411,15 @@ Resources:
       CodeUri: src/GalaShow.BackGround/
       Handler: GalaShow.BackGround::GalaShow.BackGround.Function::FunctionHandler
       Runtime: dotnet8
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetBackgroundVideos:
           Type: Api
@@ -357,8 +460,15 @@ Resources:
       Handler: GalaShow.Policy::GalaShow.Policy.Function::FunctionHandler
       Runtime: dotnet8
       
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetPolicy:
           Type: Api
@@ -398,8 +508,15 @@ Resources:
       CodeUri: src/GalaShow.Policy/
       Handler: GalaShow.Policy::GalaShow.Policy.Function::FunctionHandler
       Runtime: dotnet8
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetPolicy:
           Type: Api
@@ -440,8 +557,15 @@ Resources:
       Handler: GalaShow.Sns::GalaShow.Sns.Function::FunctionHandler
       Runtime: dotnet8
 
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetSnsLinks:
           Type: Api
@@ -482,8 +606,17 @@ Resources:
       Handler: GalaShow.ChzzkProxy::GalaShow.ChzzkProxy.Function::FunctionHandler
       Runtime: dotnet8
       Timeout: 30
+      Environment:
+        Variables:
+          CHZZK_SECRET_ARN: !Ref ChzzkSecretArn
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - !If
+          - HasChzzkSecret
+          - Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref ChzzkSecretArn
+          - !Ref AWS::NoValue
       Events:
         ChzzkProxyRoot:
           Type: Api
@@ -511,8 +644,15 @@ Resources:
       CodeUri: src/GalaShow.Sns/
       Handler: GalaShow.Sns::GalaShow.Sns.Function::FunctionHandler
       Runtime: dotnet8
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetSnsLinks:
           Type: Api
@@ -553,8 +693,17 @@ Resources:
       Handler: GalaShow.ChzzkProxy::GalaShow.ChzzkProxy.Function::FunctionHandler
       Runtime: dotnet8
       Timeout: 30
+      Environment:
+        Variables:
+          CHZZK_SECRET_ARN: !Ref ChzzkSecretArn
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - !If
+          - HasChzzkSecret
+          - Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref ChzzkSecretArn
+          - !Ref AWS::NoValue
       Events:
         ChzzkProxyRoot:
           Type: Api
@@ -582,8 +731,15 @@ Resources:
       CodeUri: src/GalaShow.Minigame/
       Handler: GalaShow.Minigame::GalaShow.Minigame.Function::FunctionHandler
       Runtime: dotnet8
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetMinigames:
           Type: Api
@@ -683,8 +839,15 @@ Resources:
       CodeUri: src/GalaShow.Minigame/
       Handler: GalaShow.Minigame::GalaShow.Minigame.Function::FunctionHandler
       Runtime: dotnet8
+      VpcConfig:
+        SecurityGroupIds: [!Ref LambdaSecurityGroupId]
+        SubnetIds: !Ref PrivateSubnetIds
       Policies:
-        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - AWSLambdaVPCAccessExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: [!Ref DatabaseSecretArn, !Ref JwtSecretArn]
       Events:
         GetMinigames:
           Type: Api
@@ -771,13 +934,23 @@ Resources:
             Path: /viewer-avatars
             Method: options
 
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !If [IsDev, api-dev.galashow.cloud, api.galashow.cloud]
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !If [IsDev, api-dev.galashow.cloud, api.galashow.cloud]
+          HostedZoneId: !Ref HostedZoneId
+
   ### Dev Custom Domain
   DevDomain:
     Condition: IsDev
     Type: AWS::ApiGateway::DomainName
     Properties:
-      DomainName:             api-dev.galashow.xyz
-      RegionalCertificateArn: arn:aws:acm:ap-northeast-2:610495549763:certificate/2c301078-0b91-4d2b-b88c-6e1a643dab7c
+      DomainName: api-dev.galashow.cloud
+      RegionalCertificateArn: !Ref ApiCertificate
+      SecurityPolicy: TLS_1_2
       EndpointConfiguration:
         Types: [ REGIONAL ]
 
@@ -786,8 +959,9 @@ Resources:
     Condition: IsProd
     Type: AWS::ApiGateway::DomainName
     Properties:
-      DomainName:             api.galashow.xyz
-      RegionalCertificateArn: arn:aws:acm:ap-northeast-2:610495549763:certificate/2c301078-0b91-4d2b-b88c-6e1a643dab7c
+      DomainName: api.galashow.cloud
+      RegionalCertificateArn: !Ref ApiCertificate
+      SecurityPolicy: TLS_1_2
       EndpointConfiguration:
         Types: [ REGIONAL ]
 
@@ -818,8 +992,8 @@ Resources:
     Condition: IsDev
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: Z001166232XN5SLW00H6Z
-      Name:         api-dev.galashow.xyz
+      HostedZoneId: !Ref HostedZoneId
+      Name: api-dev.galashow.cloud
       Type:         A
       AliasTarget:
         DNSName:      !GetAtt DevDomain.RegionalDomainName
@@ -831,10 +1005,16 @@ Resources:
     Condition: IsProd
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId: Z001166232XN5SLW00H6Z
-      Name:         api.galashow.xyz
+      HostedZoneId: !Ref HostedZoneId
+      Name: api.galashow.cloud
       Type:         A
       AliasTarget:
         DNSName:      !GetAtt ProdDomain.RegionalDomainName
         HostedZoneId: !GetAtt ProdDomain.RegionalHostedZoneId
         EvaluateTargetHealth: false
+
+Outputs:
+  DatabaseInitializerFunction:
+    Value: !Ref DatabaseInitializer
+  ApiUrl:
+    Value: !If [IsDev, 'https://api-dev.galashow.cloud', 'https://api.galashow.cloud']

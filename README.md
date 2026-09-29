@@ -1,6 +1,18 @@
 # GalaShow API
 
+개발 API: `https://api-dev.galashow.cloud` · 운영 API: `https://api.galashow.cloud`
+
+AWS 구성과 환경별 배포는 [인프라 배포 안내](infra/README.md), 신규 DB 테이블 생성은 [DB 초기화 안내](database/README.md)를 참고한다.
+
+CI/CD는 `develop` 대상 PR에서 테스트하고, `develop`에 push하면 개발 API를 자동 배포한다. 운영은 GitHub Actions의 `GalaShow API CI/CD`에서 `stage=prod`로 수동 실행한다. 최초 GitHub 변수/Secrets 설정과 로컬 배포 명령은 [API CI/CD 안내](infra/README.md#api-cicd)에 있다.
+
 이 문서는 GalaShow API에 대한 개요를 제공하며, 인증 방법 및 각 엔드포인트에 대한 자세한 정보를 포함합니다.
+
+## 치지직 연동
+
+기존 `/chzzk` 경로에서 로그인·토큰 갱신/폐기·사용자/채널 조회·채팅 세션/이벤트 구독 API를 제공한다. 브라우저의 앱 비밀 키를 제거하고 서버의 Secrets Manager 설정을 사용한다. PolyChat의 `apiBaseUrl`은 개발 `https://api-dev.galashow.cloud/chzzk`, 운영 `https://api.galashow.cloud/chzzk`다.
+
+처음 배포할 때 `ChzzkSecretArn` 또는 GitHub Environment Variable `CHZZK_SECRET_ARN`을 설정한다. JSON 형식, 경로, 로컬 실행 및 변경된 프론트엔드 반영 순서는 [치지직 연동 안내](src/GalaShow.ChzzkProxy/README.md)와 [Client 안내](../Client/README.md)를 따른다. 기존 범용 프록시 경로는 새 계약으로 교체되었다.
 
 ## 인증 (Authentication)
 

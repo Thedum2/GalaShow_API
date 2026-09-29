@@ -26,6 +26,10 @@ namespace GalaShow.Token
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest req, ILambdaContext ctx)
         {
             StageResolver.Resolve(req);
+            await CorsHandler.InitializeAsync();
+            if (req.HttpMethod == "OPTIONS")
+                return CorsHandler.AddCorsHeaders(req, Success200());
+
             await AppBootstrap.InitAsync();
 
             APIGatewayProxyResponse response;
@@ -37,8 +41,6 @@ namespace GalaShow.Token
                     ("POST", "/auth/refresh") => await Refresh(req),
                     ("POST", "/auth/logout") => await Logout(req),
                     ("GET", "/auth/verify") => await Verify(req),
-
-                    ("OPTIONS", _) => Success200(),
 
                     _ => ErrorResults.Json(ErrorCode.Forbidden)
                 };

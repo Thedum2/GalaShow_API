@@ -1,5 +1,3 @@
-using GalaShow.Common.Configuration;
-
 namespace GalaShow.Common.Auth
 {
     public class JwtOptions
@@ -8,22 +6,20 @@ namespace GalaShow.Common.Auth
         public string? Audience { get; init; } = "galashow-client";
         public string? SecretArn { get; init; } = string.Empty;
 
-        private const string DevSecretArn = "arn:aws:secretsmanager:ap-northeast-2:610495549763:secret:dev/galashow-kyCunF";
-        private const string ProdSecretArn = "arn:aws:secretsmanager:ap-northeast-2:610495549763:secret:prod/galashow-AuW7Z5";
         public static JwtOptions FromEnv()
         {
-            bool isDev = StageResolver.IsDev();
-            
             var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "galashow";
             var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "galashow-client";
 
-            var secretArn = isDev ? DevSecretArn : ProdSecretArn;
+            var secretArn = Environment.GetEnvironmentVariable("JWT_SECRET_ARN");
+            if (string.IsNullOrWhiteSpace(secretArn))
+                throw new InvalidOperationException("JWT_SECRET_ARN must be configured.");
 
             return new JwtOptions
             {
                 Issuer = issuer,
                 Audience = audience,
-                SecretArn = secretArn
+                SecretArn = secretArn.Trim()
             };
         }
     }

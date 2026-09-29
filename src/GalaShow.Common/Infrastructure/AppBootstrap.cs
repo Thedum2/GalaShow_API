@@ -1,4 +1,3 @@
-using GalaShow.Common.Cors;
 using GalaShow.Common.Service;
 
 namespace GalaShow.Common.Infrastructure
@@ -12,7 +11,6 @@ namespace GalaShow.Common.Infrastructure
         private static async Task InitializeCoreAsync()
         {
             await SecretsService.Instance.InitializeAsync();
-            await CorsHandler.InitializeAsync();
             await DatabaseService.Instance.InitializeAsync();
             await JwtService.Instance.InitializeAsync();
             await TokenService.Instance.InitializeAsync();

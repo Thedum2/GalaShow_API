@@ -1,0 +1,1128 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "GitHub OIDC deployment roles for the existing GalaShow dev and prod stacks",
+  "Metadata": {
+    "Scope": "Bootstrap this stack with an administrator. CI roles update existing API/web deployments; database, OIDC, and new REST API bootstrap remain operator tasks.",
+    "ResourceScoping": "CloudFormation stack IDs, generated Lambda role suffixes, certificate IDs, DNS change IDs and API child resources require ARN suffix wildcards. ACM writes require the environment's CloudFormation stack tag; certificate requests and DNS changes are limited to its API domain.",
+    "GlobalResources": "Only CloudFormation template validation, EC2 VPC metadata discovery, and Route53 hosted-zone discovery use Resource '*'; these APIs do not support resource-level permissions. No EC2 mutations, secret reads, Lambda invocation, or administrator managed policy attachment are granted.",
+    "OidcSubjects": "Defaults were verified as use_immutable_subject=false on 2026-09-29. After opting into immutable subjects or renaming/transferring a repo, supply its exact repo:OWNER@ID/REPO@ID prefix from GitHub. Trust always uses exact audience and repository/environment subject.",
+    "Sources": [
+      "https://docs.github.com/en/actions/reference/security/oidc",
+      "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/control-access-with-iam.html",
+      "https://docs.aws.amazon.com/service-authorization/latest/reference/list_cloudformation.html",
+      "https://docs.aws.amazon.com/service-authorization/latest/reference/list_apigateway.html",
+      "https://docs.aws.amazon.com/service-authorization/latest/reference/list_acm.html"
+    ]
+  },
+  "Parameters": {
+    "HostedZoneId": {
+      "Type": "String",
+      "Default": "Z0263745GATMIS12FEIH",
+      "AllowedPattern": "Z[A-Z0-9]+",
+      "Description": "Existing public galashow.cloud hosted zone ID"
+    },
+    "AdminSubjectPrefix": {
+      "Type": "String",
+      "Default": "repo:Thedum2/GalaShow_Admin",
+      "AllowedPattern": "repo:[A-Za-z0-9_.-]+(@[0-9]+)?/[A-Za-z0-9_.-]+(@[0-9]+)?",
+      "Description": "Exact GitHub OIDC repository subject prefix; environment is appended by this template"
+    },
+    "ClientSubjectPrefix": {
+      "Type": "String",
+      "Default": "repo:Thedum2/GalaShow_Client",
+      "AllowedPattern": "repo:[A-Za-z0-9_.-]+(@[0-9]+)?/[A-Za-z0-9_.-]+(@[0-9]+)?",
+      "Description": "Exact GitHub OIDC repository subject prefix; environment is appended by this template"
+    },
+    "ApiSubjectPrefix": {
+      "Type": "String",
+      "Default": "repo:Thedum2/GalaShow_API",
+      "AllowedPattern": "repo:[A-Za-z0-9_.-]+(@[0-9]+)?/[A-Za-z0-9_.-]+(@[0-9]+)?",
+      "Description": "Exact GitHub OIDC repository subject prefix; environment is appended by this template"
+    },
+    "AdminDevDistributionId": {
+      "Type": "String",
+      "Default": "E2C4KF2DU1YONX",
+      "AllowedPattern": "[A-Z0-9]+",
+      "Description": "Existing AdminDevDistributionId; refresh from CloudFormation when replacing this resource"
+    },
+    "ClientDevDistributionId": {
+      "Type": "String",
+      "Default": "E192DNXJCWM7KQ",
+      "AllowedPattern": "[A-Z0-9]+",
+      "Description": "Existing ClientDevDistributionId; refresh from CloudFormation when replacing this resource"
+    },
+    "AdminProdDistributionId": {
+      "Type": "String",
+      "Default": "E2FR2G5J6ED98Y",
+      "AllowedPattern": "[A-Z0-9]+",
+      "Description": "Existing AdminProdDistributionId; refresh from CloudFormation when replacing this resource"
+    },
+    "ClientProdDistributionId": {
+      "Type": "String",
+      "Default": "E2BVL74PKE2AZ7",
+      "AllowedPattern": "[A-Z0-9]+",
+      "Description": "Existing ClientProdDistributionId; refresh from CloudFormation when replacing this resource"
+    },
+    "ApiDevRestApiId": {
+      "Type": "String",
+      "Default": "ewrdqngutj",
+      "AllowedPattern": "[a-z0-9]+",
+      "Description": "Existing ApiDevRestApiId; refresh from CloudFormation when replacing this resource"
+    },
+    "ApiProdRestApiId": {
+      "Type": "String",
+      "Default": "0sh3q24aw9",
+      "AllowedPattern": "[a-z0-9]+",
+      "Description": "Existing ApiProdRestApiId; refresh from CloudFormation when replacing this resource"
+    }
+  },
+  "Resources": {
+    "GitHubOidcProvider": {
+      "Type": "AWS::IAM::OIDCProvider",
+      "Properties": {
+        "Url": "https://token.actions.githubusercontent.com",
+        "ClientIdList": [
+          "sts.amazonaws.com"
+        ]
+      }
+    },
+    "AdminDevRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "galashow-github-admin-dev",
+        "Description": "GitHub GalaShow Admin dev deployment",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {"Ref": "GitHubOidcProvider"}
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": {"Fn::Sub": "${AdminSubjectPrefix}:environment:dev"}
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "DeployAdminDev",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "ReadWebStack",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:DescribeStacks",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-web-dev/*"}
+                },
+                {
+                  "Sid": "InspectOwnBucket",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-dev-admin"}
+                },
+                {
+                  "Sid": "PublishOwnObjects",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:AbortMultipartUpload"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-dev-admin/*"}
+                },
+                {
+                  "Sid": "InvalidateOwnDistribution",
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:CreateInvalidation",
+                    "cloudfront:GetInvalidation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${AdminDevDistributionId}"}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "AdminProdRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "galashow-github-admin-prod",
+        "Description": "GitHub GalaShow Admin prod deployment",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {"Ref": "GitHubOidcProvider"}
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": {"Fn::Sub": "${AdminSubjectPrefix}:environment:prod"}
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "DeployAdminProd",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "ReadWebStack",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:DescribeStacks",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-web-prod/*"}
+                },
+                {
+                  "Sid": "InspectOwnBucket",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-prod-admin"}
+                },
+                {
+                  "Sid": "PublishOwnObjects",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:AbortMultipartUpload"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-prod-admin/*"}
+                },
+                {
+                  "Sid": "InvalidateOwnDistribution",
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:CreateInvalidation",
+                    "cloudfront:GetInvalidation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${AdminProdDistributionId}"}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ClientDevRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "galashow-github-client-dev",
+        "Description": "GitHub GalaShow Client dev deployment",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {"Ref": "GitHubOidcProvider"}
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": {"Fn::Sub": "${ClientSubjectPrefix}:environment:dev"}
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "DeployClientDev",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "ReadWebStack",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:DescribeStacks",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-web-dev/*"}
+                },
+                {
+                  "Sid": "InspectOwnBucket",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-dev-client"}
+                },
+                {
+                  "Sid": "PublishOwnObjects",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:AbortMultipartUpload"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-dev-client/*"}
+                },
+                {
+                  "Sid": "InvalidateOwnDistribution",
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:CreateInvalidation",
+                    "cloudfront:GetInvalidation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${ClientDevDistributionId}"}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ClientProdRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "galashow-github-client-prod",
+        "Description": "GitHub GalaShow Client prod deployment",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {"Ref": "GitHubOidcProvider"}
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": {"Fn::Sub": "${ClientSubjectPrefix}:environment:prod"}
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "DeployClientProd",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "ReadWebStack",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:DescribeStacks",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-web-prod/*"}
+                },
+                {
+                  "Sid": "InspectOwnBucket",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-prod-client"}
+                },
+                {
+                  "Sid": "PublishOwnObjects",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:AbortMultipartUpload"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-prod-client/*"}
+                },
+                {
+                  "Sid": "InvalidateOwnDistribution",
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:CreateInvalidation",
+                    "cloudfront:GetInvalidation"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${ClientProdDistributionId}"}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ApiDevRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "galashow-github-api-dev",
+        "Description": "GitHub GalaShow Api dev deployment",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {"Ref": "GitHubOidcProvider"}
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": {"Fn::Sub": "${ApiSubjectPrefix}:environment:dev"}
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "DeployApiDev",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "ReadPrerequisiteStacks",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:DescribeStacks",
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-database-dev/*"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-artifacts/*"}
+                  ]
+                },
+                {
+                  "Sid": "DeployOwnApiStack",
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudformation:CreateChangeSet",
+                    "cloudformation:DescribeChangeSet",
+                    "cloudformation:ExecuteChangeSet",
+                    "cloudformation:DeleteChangeSet",
+                    "cloudformation:DescribeStacks",
+                    "cloudformation:DescribeStackEvents",
+                    "cloudformation:DescribeStackResources",
+                    "cloudformation:DescribeStackResource",
+                    "cloudformation:ListStackResources",
+                    "cloudformation:GetTemplate",
+                    "cloudformation:GetTemplateSummary",
+                    "cloudformation:TagResource",
+                    "cloudformation:UntagResource"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-api-dev/*"}
+                },
+                {
+                  "Sid": "TransformSam",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:CreateChangeSet",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31"}
+                },
+                {
+                  "Sid": "ValidateTemplate",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:ValidateTemplate",
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "LocateArtifactsBucket",
+                  "Effect": "Allow",
+                  "Action": "s3:GetBucketLocation",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-${AWS::Region}-artifacts"}
+                },
+                {
+                  "Sid": "ListOwnArtifacts",
+                  "Effect": "Allow",
+                  "Action": "s3:ListBucket",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-${AWS::Region}-artifacts"},
+                  "Condition": {
+                    "StringLike": {
+                      "s3:prefix": [
+                        "api/dev",
+                        "api/dev/*"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "Sid": "UploadOwnArtifacts",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectVersion",
+                    "s3:PutObject",
+                    "s3:AbortMultipartUpload"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-${AWS::Region}-artifacts/api/dev/*"}
+                },
+                {
+                  "Sid": "ManageOwnFunctions",
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:CreateFunction",
+                    "lambda:DeleteFunction",
+                    "lambda:GetFunction",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:GetFunctionCodeSigningConfig",
+                    "lambda:GetFunctionRecursionConfig",
+                    "lambda:GetRuntimeManagementConfig",
+                    "lambda:GetFunctionScalingConfig",
+                    "lambda:UpdateFunctionCode",
+                    "lambda:UpdateFunctionConfiguration",
+                    "lambda:GetPolicy",
+                    "lambda:AddPermission",
+                    "lambda:RemovePermission",
+                    "lambda:ListTags",
+                    "lambda:TagResource",
+                    "lambda:UntagResource",
+                    "lambda:PublishVersion",
+                    "lambda:ListVersionsByFunction"
+                  ],
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:DevBannerFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:DevTokenFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:DevBackgroundFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:DevPolicyFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:DevSnsFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:DevChzzkProxyFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:DevMinigameFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:galashow-cloud-dev-database-initializer"}
+                  ]
+                },
+                {
+                  "Sid": "ManageOwnExecutionRoles",
+                  "Effect": "Allow",
+                  "Action": [
+                    "iam:CreateRole",
+                    "iam:DeleteRole",
+                    "iam:GetRole",
+                    "iam:UpdateRole",
+                    "iam:UpdateRoleDescription",
+                    "iam:UpdateAssumeRolePolicy",
+                    "iam:PutRolePolicy",
+                    "iam:DeleteRolePolicy",
+                    "iam:GetRolePolicy",
+                    "iam:ListRolePolicies",
+                    "iam:ListAttachedRolePolicies",
+                    "iam:TagRole",
+                    "iam:UntagRole"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/galashow-cloud-api-dev-*"}
+                },
+                {
+                  "Sid": "AttachLambdaExecutionPolicies",
+                  "Effect": "Allow",
+                  "Action": [
+                    "iam:AttachRolePolicy",
+                    "iam:DetachRolePolicy"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/galashow-cloud-api-dev-*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "iam:PolicyARN": [
+                        {"Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"},
+                        {"Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"}
+                      ]
+                    }
+                  }
+                },
+                {
+                  "Sid": "PassOwnExecutionRoles",
+                  "Effect": "Allow",
+                  "Action": "iam:PassRole",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/galashow-cloud-api-dev-*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "iam:PassedToService": "lambda.amazonaws.com"
+                    }
+                  }
+                },
+                {
+                  "Sid": "UpdateOwnApiGateway",
+                  "Effect": "Allow",
+                  "Action": [
+                    "apigateway:GET",
+                    "apigateway:POST",
+                    "apigateway:PUT",
+                    "apigateway:PATCH",
+                    "apigateway:DELETE",
+                    "apigateway:UpdateRestApiPolicy"
+                  ],
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiDevRestApiId}"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiDevRestApiId}/*"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/domainnames/api-dev.galashow.cloud"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/domainnames/api-dev.galashow.cloud/*"}
+                  ]
+                },
+                {
+                  "Sid": "TagOwnApiGateway",
+                  "Effect": "Allow",
+                  "Action": [
+                    "apigateway:GET",
+                    "apigateway:PUT",
+                    "apigateway:POST",
+                    "apigateway:PATCH",
+                    "apigateway:DELETE"
+                  ],
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/tags/*restapis*${ApiDevRestApiId}*"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/tags/*domainnames*api-dev.galashow.cloud*"}
+                  ]
+                },
+                {
+                  "Sid": "UseOwnDomainCertificate",
+                  "Effect": "Allow",
+                  "Action": "apigateway:AddCertificateToDomain",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/domainnames/api-dev.galashow.cloud"}
+                },
+                {
+                  "Sid": "ManageOwnCertificates",
+                  "Effect": "Allow",
+                  "Action": [
+                    "acm:DescribeCertificate",
+                    "acm:ListTagsForCertificate",
+                    "acm:AddTagsToCertificate",
+                    "acm:RemoveTagsFromCertificate",
+                    "acm:DeleteCertificate",
+                    "acm:UpdateCertificateOptions"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:ResourceTag/aws:cloudformation:stack-name": "galashow-cloud-api-dev"
+                    }
+                  }
+                },
+                {
+                  "Sid": "RequestOwnApiCertificate",
+                  "Effect": "Allow",
+                  "Action": "acm:RequestCertificate",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"},
+                  "Condition": {
+                    "ForAllValues:StringEquals": {
+                      "acm:DomainNames": [
+                        "api-dev.galashow.cloud"
+                      ]
+                    },
+                    "StringEquals": {
+                      "acm:ValidationMethod": "DNS"
+                    },
+                    "Null": {
+                      "acm:DomainNames": "false"
+                    }
+                  }
+                },
+                {
+                  "Sid": "TagNewOwnApiCertificate",
+                  "Effect": "Allow",
+                  "Action": "acm:AddTagsToCertificate",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:RequestTag/aws:cloudformation:stack-name": "galashow-cloud-api-dev"
+                    }
+                  }
+                },
+                {
+                  "Sid": "InspectOwnDnsZone",
+                  "Effect": "Allow",
+                  "Action": [
+                    "route53:GetHostedZone",
+                    "route53:ListResourceRecordSets"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}"}
+                },
+                {
+                  "Sid": "UpdateOwnApiAlias",
+                  "Effect": "Allow",
+                  "Action": "route53:ChangeResourceRecordSets",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}"},
+                  "Condition": {
+                    "ForAllValues:StringEquals": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+                        "api-dev.galashow.cloud"
+                      ],
+                      "route53:ChangeResourceRecordSetsRecordTypes": [
+                        "A"
+                      ]
+                    },
+                    "Null": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": "false",
+                      "route53:ChangeResourceRecordSetsRecordTypes": "false"
+                    }
+                  }
+                },
+                {
+                  "Sid": "ValidateOwnApiCertificateDns",
+                  "Effect": "Allow",
+                  "Action": "route53:ChangeResourceRecordSets",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}"},
+                  "Condition": {
+                    "ForAllValues:StringLike": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+                        "_*.api-dev.galashow.cloud"
+                      ]
+                    },
+                    "ForAllValues:StringEquals": {
+                      "route53:ChangeResourceRecordSetsRecordTypes": [
+                        "CNAME"
+                      ]
+                    },
+                    "Null": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": "false",
+                      "route53:ChangeResourceRecordSetsRecordTypes": "false"
+                    }
+                  }
+                },
+                {
+                  "Sid": "PollDnsChange",
+                  "Effect": "Allow",
+                  "Action": "route53:GetChange",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::change/*"}
+                },
+                {
+                  "Sid": "ReadNetworkMetadata",
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeVpcs",
+                    "ec2:DescribeNetworkInterfaces",
+                    "route53:ListHostedZones"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ApiProdRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "galashow-github-api-prod",
+        "Description": "GitHub GalaShow Api prod deployment",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {"Ref": "GitHubOidcProvider"}
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": {"Fn::Sub": "${ApiSubjectPrefix}:environment:prod"}
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "DeployApiProd",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "ReadPrerequisiteStacks",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:DescribeStacks",
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-database-prod/*"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-artifacts/*"}
+                  ]
+                },
+                {
+                  "Sid": "DeployOwnApiStack",
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudformation:CreateChangeSet",
+                    "cloudformation:DescribeChangeSet",
+                    "cloudformation:ExecuteChangeSet",
+                    "cloudformation:DeleteChangeSet",
+                    "cloudformation:DescribeStacks",
+                    "cloudformation:DescribeStackEvents",
+                    "cloudformation:DescribeStackResources",
+                    "cloudformation:DescribeStackResource",
+                    "cloudformation:ListStackResources",
+                    "cloudformation:GetTemplate",
+                    "cloudformation:GetTemplateSummary",
+                    "cloudformation:TagResource",
+                    "cloudformation:UntagResource"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/galashow-cloud-api-prod/*"}
+                },
+                {
+                  "Sid": "TransformSam",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:CreateChangeSet",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31"}
+                },
+                {
+                  "Sid": "ValidateTemplate",
+                  "Effect": "Allow",
+                  "Action": "cloudformation:ValidateTemplate",
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "LocateArtifactsBucket",
+                  "Effect": "Allow",
+                  "Action": "s3:GetBucketLocation",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-${AWS::Region}-artifacts"}
+                },
+                {
+                  "Sid": "ListOwnArtifacts",
+                  "Effect": "Allow",
+                  "Action": "s3:ListBucket",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-${AWS::Region}-artifacts"},
+                  "Condition": {
+                    "StringLike": {
+                      "s3:prefix": [
+                        "api/prod",
+                        "api/prod/*"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "Sid": "UploadOwnArtifacts",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectVersion",
+                    "s3:PutObject",
+                    "s3:AbortMultipartUpload"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::galashow-${AWS::AccountId}-${AWS::Region}-artifacts/api/prod/*"}
+                },
+                {
+                  "Sid": "ManageOwnFunctions",
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:CreateFunction",
+                    "lambda:DeleteFunction",
+                    "lambda:GetFunction",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:GetFunctionCodeSigningConfig",
+                    "lambda:GetFunctionRecursionConfig",
+                    "lambda:GetRuntimeManagementConfig",
+                    "lambda:GetFunctionScalingConfig",
+                    "lambda:UpdateFunctionCode",
+                    "lambda:UpdateFunctionConfiguration",
+                    "lambda:GetPolicy",
+                    "lambda:AddPermission",
+                    "lambda:RemovePermission",
+                    "lambda:ListTags",
+                    "lambda:TagResource",
+                    "lambda:UntagResource",
+                    "lambda:PublishVersion",
+                    "lambda:ListVersionsByFunction"
+                  ],
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:ProdBannerFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:ProdTokenFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:ProdBackgroundFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:ProdPolicyFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:ProdSnsFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:ProdChzzkProxyFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:ProdMinigameFunction"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:galashow-cloud-prod-database-initializer"}
+                  ]
+                },
+                {
+                  "Sid": "ManageOwnExecutionRoles",
+                  "Effect": "Allow",
+                  "Action": [
+                    "iam:CreateRole",
+                    "iam:DeleteRole",
+                    "iam:GetRole",
+                    "iam:UpdateRole",
+                    "iam:UpdateRoleDescription",
+                    "iam:UpdateAssumeRolePolicy",
+                    "iam:PutRolePolicy",
+                    "iam:DeleteRolePolicy",
+                    "iam:GetRolePolicy",
+                    "iam:ListRolePolicies",
+                    "iam:ListAttachedRolePolicies",
+                    "iam:TagRole",
+                    "iam:UntagRole"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/galashow-cloud-api-prod-*"}
+                },
+                {
+                  "Sid": "AttachLambdaExecutionPolicies",
+                  "Effect": "Allow",
+                  "Action": [
+                    "iam:AttachRolePolicy",
+                    "iam:DetachRolePolicy"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/galashow-cloud-api-prod-*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "iam:PolicyARN": [
+                        {"Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"},
+                        {"Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"}
+                      ]
+                    }
+                  }
+                },
+                {
+                  "Sid": "PassOwnExecutionRoles",
+                  "Effect": "Allow",
+                  "Action": "iam:PassRole",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/galashow-cloud-api-prod-*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "iam:PassedToService": "lambda.amazonaws.com"
+                    }
+                  }
+                },
+                {
+                  "Sid": "UpdateOwnApiGateway",
+                  "Effect": "Allow",
+                  "Action": [
+                    "apigateway:GET",
+                    "apigateway:POST",
+                    "apigateway:PUT",
+                    "apigateway:PATCH",
+                    "apigateway:DELETE",
+                    "apigateway:UpdateRestApiPolicy"
+                  ],
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiProdRestApiId}"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiProdRestApiId}/*"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/domainnames/api.galashow.cloud"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/domainnames/api.galashow.cloud/*"}
+                  ]
+                },
+                {
+                  "Sid": "TagOwnApiGateway",
+                  "Effect": "Allow",
+                  "Action": [
+                    "apigateway:GET",
+                    "apigateway:PUT",
+                    "apigateway:POST",
+                    "apigateway:PATCH",
+                    "apigateway:DELETE"
+                  ],
+                  "Resource": [
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/tags/*restapis*${ApiProdRestApiId}*"},
+                    {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/tags/*domainnames*api.galashow.cloud*"}
+                  ]
+                },
+                {
+                  "Sid": "UseOwnDomainCertificate",
+                  "Effect": "Allow",
+                  "Action": "apigateway:AddCertificateToDomain",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:apigateway:${AWS::Region}::/domainnames/api.galashow.cloud"}
+                },
+                {
+                  "Sid": "ManageOwnCertificates",
+                  "Effect": "Allow",
+                  "Action": [
+                    "acm:DescribeCertificate",
+                    "acm:ListTagsForCertificate",
+                    "acm:AddTagsToCertificate",
+                    "acm:RemoveTagsFromCertificate",
+                    "acm:DeleteCertificate",
+                    "acm:UpdateCertificateOptions"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:ResourceTag/aws:cloudformation:stack-name": "galashow-cloud-api-prod"
+                    }
+                  }
+                },
+                {
+                  "Sid": "RequestOwnApiCertificate",
+                  "Effect": "Allow",
+                  "Action": "acm:RequestCertificate",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"},
+                  "Condition": {
+                    "ForAllValues:StringEquals": {
+                      "acm:DomainNames": [
+                        "api.galashow.cloud"
+                      ]
+                    },
+                    "StringEquals": {
+                      "acm:ValidationMethod": "DNS"
+                    },
+                    "Null": {
+                      "acm:DomainNames": "false"
+                    }
+                  }
+                },
+                {
+                  "Sid": "TagNewOwnApiCertificate",
+                  "Effect": "Allow",
+                  "Action": "acm:AddTagsToCertificate",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"},
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:RequestTag/aws:cloudformation:stack-name": "galashow-cloud-api-prod"
+                    }
+                  }
+                },
+                {
+                  "Sid": "InspectOwnDnsZone",
+                  "Effect": "Allow",
+                  "Action": [
+                    "route53:GetHostedZone",
+                    "route53:ListResourceRecordSets"
+                  ],
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}"}
+                },
+                {
+                  "Sid": "UpdateOwnApiAlias",
+                  "Effect": "Allow",
+                  "Action": "route53:ChangeResourceRecordSets",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}"},
+                  "Condition": {
+                    "ForAllValues:StringEquals": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+                        "api.galashow.cloud"
+                      ],
+                      "route53:ChangeResourceRecordSetsRecordTypes": [
+                        "A"
+                      ]
+                    },
+                    "Null": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": "false",
+                      "route53:ChangeResourceRecordSetsRecordTypes": "false"
+                    }
+                  }
+                },
+                {
+                  "Sid": "ValidateOwnApiCertificateDns",
+                  "Effect": "Allow",
+                  "Action": "route53:ChangeResourceRecordSets",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::hostedzone/${HostedZoneId}"},
+                  "Condition": {
+                    "ForAllValues:StringLike": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+                        "_*.api.galashow.cloud"
+                      ]
+                    },
+                    "ForAllValues:StringEquals": {
+                      "route53:ChangeResourceRecordSetsRecordTypes": [
+                        "CNAME"
+                      ]
+                    },
+                    "Null": {
+                      "route53:ChangeResourceRecordSetsNormalizedRecordNames": "false",
+                      "route53:ChangeResourceRecordSetsRecordTypes": "false"
+                    }
+                  }
+                },
+                {
+                  "Sid": "PollDnsChange",
+                  "Effect": "Allow",
+                  "Action": "route53:GetChange",
+                  "Resource": {"Fn::Sub": "arn:${AWS::Partition}:route53:::change/*"}
+                },
+                {
+                  "Sid": "ReadNetworkMetadata",
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeVpcs",
+                    "ec2:DescribeNetworkInterfaces",
+                    "route53:ListHostedZones"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "AwsAccountId": {
+      "Value": {"Ref": "AWS::AccountId"}
+    },
+    "GitHubOidcProviderArn": {
+      "Value": {"Ref": "GitHubOidcProvider"}
+    },
+    "AdminDevRoleArn": {
+      "Description": "Admin repository dev environment AWS_ROLE_ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "AdminDevRole",
+          "Arn"
+        ]
+      }
+    },
+    "AdminProdRoleArn": {
+      "Description": "Admin repository prod environment AWS_ROLE_ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "AdminProdRole",
+          "Arn"
+        ]
+      }
+    },
+    "ClientDevRoleArn": {
+      "Description": "Client repository dev environment AWS_ROLE_ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "ClientDevRole",
+          "Arn"
+        ]
+      }
+    },
+    "ClientProdRoleArn": {
+      "Description": "Client repository prod environment AWS_ROLE_ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "ClientProdRole",
+          "Arn"
+        ]
+      }
+    },
+    "ApiDevRoleArn": {
+      "Description": "Api repository dev environment AWS_ROLE_ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "ApiDevRole",
+          "Arn"
+        ]
+      }
+    },
+    "ApiProdRoleArn": {
+      "Description": "Api repository prod environment AWS_ROLE_ARN",
+      "Value": {
+        "Fn::GetAtt": [
+          "ApiProdRole",
+          "Arn"
+        ]
+      }
+    }
+  }
+}

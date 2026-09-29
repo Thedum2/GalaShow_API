@@ -34,6 +34,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\GalaShow.Token\GalaShow.Token.csproj" />
     <ProjectReference Include="..\..\src\GalaShow.Common\GalaShow.Common.csproj" />
+    <ProjectReference Include="..\..\src\GalaShow.BackGround\GalaShow.BackGround.csproj" />
+    <ProjectReference Include="..\..\src\GalaShow.Banner\GalaShow.Banner.csproj" />
+    <ProjectReference Include="..\..\src\GalaShow.ChzzkProxy\GalaShow.ChzzkProxy.csproj" />
+    <ProjectReference Include="..\..\src\GalaShow.Minigame\GalaShow.Minigame.csproj" />
+    <ProjectReference Include="..\..\src\GalaShow.Policy\GalaShow.Policy.csproj" />
+    <ProjectReference Include="..\..\src\GalaShow.Sns\GalaShow.Sns.csproj" />
   </ItemGroup>
 
 </Project>

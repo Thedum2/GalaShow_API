@@ -24,6 +24,10 @@ namespace GalaShow.BackGround
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest req, ILambdaContext context)
         {
             StageResolver.Resolve(req);
+            await CorsHandler.InitializeAsync();
+            if (req.HttpMethod == "OPTIONS")
+                return CorsHandler.AddCorsHeaders(req, Success200());
+
             await AppBootstrap.InitAsync();
 
             APIGatewayProxyResponse? response;
@@ -40,8 +44,6 @@ namespace GalaShow.BackGround
                             () => ErrorResults.Json(ErrorCode.AuthTokenExpired),
                             () => ErrorResults.Json(ErrorCode.Unauthorized)
                         ),
-
-                    ("OPTIONS", _) => Success200(),
 
                     _ => ErrorResults.Json(ErrorCode.Forbidden)
                 };

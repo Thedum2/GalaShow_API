@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: GalaShow CloudFront certificate (deploy in us-east-1)
+Parameters:
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: galashow.cloud
+      SubjectAlternativeNames:
+        - '*.galashow.cloud'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: galashow.cloud
+          HostedZoneId: !Ref HostedZoneId
+Outputs:
+  CertificateArn:
+    Value: !Ref Certificate

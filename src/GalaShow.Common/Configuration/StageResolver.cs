@@ -13,119 +13,46 @@ public static class StageResolver
 {
     private static Stage _current = Stage.None;
 
-
     public static Stage Resolve(APIGatewayProxyRequest? req = null)
     {
-        if (_current != Stage.None) return _current;
+        // Deployment configuration is authoritative, including for warm invocations.
+        var configured = Environment.GetEnvironmentVariable("STAGE");
+        if (configured is not null)
+        {
+            _current = Parse(configured);
+            if (_current == Stage.None)
+                throw new InvalidOperationException("STAGE must be dev or prod.");
+            return _current;
+        }
 
-        var isLocal = string.Equals(
-            Environment.GetEnvironmentVariable("AWS_SAM_LOCAL"),
-            "true",
-            StringComparison.OrdinalIgnoreCase
-        );
-        if (isLocal)
+        if (string.Equals(Environment.GetEnvironmentVariable("AWS_SAM_LOCAL"), "true", StringComparison.OrdinalIgnoreCase))
             return _current = Stage.Dev;
 
-        string? stageName = null;
+        var gatewayStage = Parse(req?.RequestContext?.Stage);
+        if (gatewayStage != Stage.None)
+            return _current = gatewayStage;
 
-        var stageFromContext = req?.RequestContext?.Stage;
-        Console.WriteLine("[Resolve] Context Stage = " + stageFromContext);
-        if (!string.IsNullOrWhiteSpace(stageFromContext))
-            stageName = stageFromContext;
-
-        if (string.IsNullOrWhiteSpace(stageName))
-        {
-            var fromHost = ResolveFromHost(req?.Headers);
-            Console.WriteLine("[Resolve] From Host = " + fromHost);
-            if (!string.IsNullOrWhiteSpace(fromHost))
-                stageName = fromHost;
-        }
-
-        if (string.IsNullOrWhiteSpace(stageName))
-        {
-            var fromEnv = ResolveFromEnv();
-            Console.WriteLine("[Resolve] From Env = " + fromEnv);
-            if (!string.IsNullOrWhiteSpace(fromEnv))
-                stageName = fromEnv;
-        }
-
-        if (string.IsNullOrWhiteSpace(stageName))
-        {
-            var fromFn = ResolveFromFunctionName();
-            Console.WriteLine("[Resolve] From FunctionName = " + fromFn);
-            if (!string.IsNullOrWhiteSpace(fromFn))
-                stageName = fromFn;
-        }
-
-        _current = Parse(stageName) switch
-        {
-            Stage.None => Stage.Dev,
-            var s => s
-        };
-
-        Console.WriteLine("[Resolve] Final Stage = " + _current);
-        return _current;
+        var hostStage = ResolveFromHost(req?.Headers);
+        return _current = hostStage == Stage.None ? Stage.Prod : hostStage;
     }
 
-    private static string? ResolveFromHost(IDictionary<string, string>? headers)
+    private static Stage ResolveFromHost(IDictionary<string, string>? headers)
     {
-        if (headers == null) return null;
-
-        string? host = null;
-        if (!headers.TryGetValue("Host", out host))
-            headers.TryGetValue("host", out host);
-
-        if (string.IsNullOrWhiteSpace(host)) return null;
-
-        if (host.Contains("api-dev.galashow.xyz", StringComparison.OrdinalIgnoreCase)) return "dev";
-        if (host.Contains("api.galashow.xyz", StringComparison.OrdinalIgnoreCase)) return "prod";
-
-        var parts = host.Split('.');
-        if (parts.Length >= 3 && parts[0].StartsWith("api-", StringComparison.OrdinalIgnoreCase))
-            return parts[0].Substring("api-".Length);
-
-        return null;
-    }
-
-    private static string? ResolveFromEnv()
-    {
-        var s =
-            Environment.GetEnvironmentVariable("STAGE") ??
-            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ??
-            Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
-        return string.IsNullOrWhiteSpace(s) ? null : s;
-    }
-
-    private static string? ResolveFromFunctionName()
-    {
-        var fn = Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME");
-        if (string.IsNullOrWhiteSpace(fn)) return null;
-
-        if (fn.Contains("dev", StringComparison.OrdinalIgnoreCase)) return "dev";
-        if (fn.Contains("prod", StringComparison.OrdinalIgnoreCase)) return "prod";
-        return null;
-    }
-
-    private static Stage Parse(string? s)
-    {
-        if (string.IsNullOrWhiteSpace(s)) return Stage.None;
-
-        var v = s.Trim().ToLowerInvariant();
-        if (v is "dev" or "development") return Stage.Dev;
-        if (v is "prod" or "production") return Stage.Prod;
-
+        var host = headers?.FirstOrDefault(h => h.Key.Equals("Host", StringComparison.OrdinalIgnoreCase)).Value;
+        if (string.Equals(host, "api-dev.galashow.cloud", StringComparison.OrdinalIgnoreCase)) return Stage.Dev;
+        if (string.Equals(host, "api.galashow.cloud", StringComparison.OrdinalIgnoreCase)) return Stage.Prod;
         return Stage.None;
     }
 
-    // 편의 메서드들
-    public static bool IsDev(string stage) =>
-        stage.Equals("dev", StringComparison.OrdinalIgnoreCase) ||
-        stage.Equals("development", StringComparison.OrdinalIgnoreCase);
+    private static Stage Parse(string? stage) => stage?.Trim().ToLowerInvariant() switch
+    {
+        "dev" or "development" => Stage.Dev,
+        "prod" or "production" => Stage.Prod,
+        _ => Stage.None
+    };
 
-    public static bool IsProd(string stage) =>
-        stage.Equals("prod", StringComparison.OrdinalIgnoreCase) ||
-        stage.Equals("production", StringComparison.OrdinalIgnoreCase);
-
+    public static bool IsDev(string stage) => Parse(stage) == Stage.Dev;
+    public static bool IsProd(string stage) => Parse(stage) == Stage.Prod;
     public static bool IsDev() => _current == Stage.Dev;
     public static bool IsProd() => _current == Stage.Prod;
     public static void Invalidate() => _current = Stage.None;

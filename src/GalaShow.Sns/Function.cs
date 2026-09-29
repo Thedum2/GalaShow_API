@@ -24,6 +24,10 @@ namespace GalaShow.Sns
             ILambdaContext context)
         {
             StageResolver.Resolve(request);
+            await CorsHandler.InitializeAsync();
+            if (request.HttpMethod == "OPTIONS")
+                return CorsHandler.AddCorsHeaders(request, Success200());
+
             await AppBootstrap.InitAsync();
 
             APIGatewayProxyResponse? response;
@@ -39,8 +43,6 @@ namespace GalaShow.Sns
                             () => ErrorResults.Json(ErrorCode.AuthTokenExpired),
                             () => ErrorResults.Json(ErrorCode.Unauthorized)
                         ),
-
-                    ("OPTIONS", _) => Success200(),
 
                     _ => ErrorResults.Json(ErrorCode.Forbidden)
                 };
