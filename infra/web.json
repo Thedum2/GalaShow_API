@@ -124,6 +124,30 @@
               }
             }
           ]
+        },
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "Id": "PublicSampleAssets",
+              "AllowedOrigins": [
+                "*"
+              ],
+              "AllowedMethods": [
+                "GET",
+                "HEAD"
+              ],
+              "AllowedHeaders": [
+                "*"
+              ],
+              "ExposedHeaders": [
+                "Accept-Ranges",
+                "Content-Length",
+                "Content-Range",
+                "ETag"
+              ],
+              "MaxAge": 86400
+            }
+          ]
         }
       }
     },
@@ -199,7 +223,32 @@
             },
             "SslSupportMethod": "sni-only",
             "MinimumProtocolVersion": "TLSv1.2_2021"
-          }
+          },
+          "CacheBehaviors": [
+            {
+              "PathPattern": "/sample-data/*",
+              "TargetOriginId": "web",
+              "ViewerProtocolPolicy": "redirect-to-https",
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS"
+              ],
+              "CachedMethods": [
+                "GET",
+                "HEAD",
+                "OPTIONS"
+              ],
+              "Compress": true,
+              "CachePolicyId": {
+                "Ref": "CachePolicy"
+              },
+              "OriginRequestPolicyId": "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf",
+              "ResponseHeadersPolicyId": {
+                "Ref": "SampleAssetsCorsPolicy"
+              }
+            }
+          ]
         }
       }
     },
@@ -532,6 +581,47 @@
           },
           "HostedZoneId": "Z2FDTNDATAQYW2",
           "EvaluateTargetHealth": false
+        }
+      }
+    },
+    "SampleAssetsCorsPolicy": {
+      "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+      "Properties": {
+        "ResponseHeadersPolicyConfig": {
+          "Name": {
+            "Fn::Sub": "galashow-${StageName}-sample-assets-cors"
+          },
+          "Comment": "Public sample assets (PDF, images, video) readable by fetch from any origin without credentials",
+          "CorsConfig": {
+            "AccessControlAllowCredentials": false,
+            "AccessControlAllowHeaders": {
+              "Items": [
+                "*"
+              ]
+            },
+            "AccessControlAllowMethods": {
+              "Items": [
+                "GET",
+                "HEAD",
+                "OPTIONS"
+              ]
+            },
+            "AccessControlAllowOrigins": {
+              "Items": [
+                "*"
+              ]
+            },
+            "AccessControlExposeHeaders": {
+              "Items": [
+                "Accept-Ranges",
+                "Content-Length",
+                "Content-Range",
+                "ETag"
+              ]
+            },
+            "AccessControlMaxAgeSec": 86400,
+            "OriginOverride": true
+          }
         }
       }
     }

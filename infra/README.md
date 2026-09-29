@@ -19,7 +19,7 @@
 | ../template.yaml | galashow-cloud-api-dev / prod | API, DNS, 서울 인증서, Lambda, 수동 DB 초기화 함수 |
 | github-actions.json | galashow-cloud-github-actions | GitHub OIDC 공급자와 저장소/환경별 배포 역할 6개 |
 
-S3 웹 버킷은 OAC로 해당 CloudFront에서만 읽는다. API 패키지는 별도 버킷에 저장하여 웹에 노출되지 않는다. React 경로는 CloudFront Function으로 `/index.html`에 연결하며 `/assets/`, `/build/`와 확장자가 있는 파일의 오류는 HTML로 바꾸지 않는다.
+S3 웹 버킷은 OAC로 해당 CloudFront에서만 읽는다. API 패키지는 별도 버킷에 저장하여 웹에 노출되지 않는다. React 경로는 CloudFront Function으로 `/index.html`에 연결하며 `/assets/`, `/build/`와 확장자가 있는 파일의 오류는 HTML로 바꾸지 않는다. Client의 `/sample-data/*`(샘플 PDF·이미지·영상)는 공개 에셋이므로 localhost 등 다른 origin의 `fetch`(react-pdf, Range 요청 포함)를 위해 CloudFront 응답 헤더 정책과 버킷 CORS로 자격증명 없는 `Access-Control-Allow-Origin: *`를 반환한다. 다른 웹 경로에는 CORS 헤더를 붙이지 않는다.
 
 DB는 Lambda 보안 그룹의 TCP 3306 연결만 허용한다. Lambda의 비밀 조회는 HTTPS VPC endpoint를 사용한다. 사용자 요청에 따라 개발/운영 모두 자동 백업 보존을 0일로 설정하고 삭제·교체 시 스냅샷을 생성하지 않는다. 자동 백업도 인스턴스 삭제 시 제거한다. 운영 인스턴스의 삭제 방지는 유지한다. 기본 DB 크기는 `db.t4g.micro`, 20 GiB(gp3), 자동 확장 상한 100 GiB, Single-AZ이며 `MultiAZ=true`로 변경할 수 있다. 백업을 꺼도 DB 본체·저장공간과 endpoint 등의 AWS 사용 요금은 발생한다.
 
