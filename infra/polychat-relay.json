@@ -1,0 +1,245 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "GalaShow Client PolyChat relay (polychat-bridge/server on Lambda Web Adapter, streaming Function URL)",
+  "Parameters": {
+    "StageName": {
+      "Type": "String",
+      "AllowedValues": [
+        "dev",
+        "prod"
+      ]
+    },
+    "CodeBucket": {
+      "Type": "String"
+    },
+    "CodeKey": {
+      "Type": "String"
+    },
+    "PolyChatVersion": {
+      "Type": "String",
+      "Description": "Installed polychat-bridge npm version (informational)"
+    },
+    "AdapterLayerArn": {
+      "Type": "String",
+      "Default": "arn:aws:lambda:ap-northeast-2:753240598075:layer:LambdaAdapterLayerX86:27"
+    },
+    "ChzzkClientId": {
+      "Type": "String",
+      "NoEcho": true,
+      "Default": ""
+    },
+    "ChzzkClientSecret": {
+      "Type": "String",
+      "NoEcho": true,
+      "Default": ""
+    },
+    "SoopClientId": {
+      "Type": "String",
+      "NoEcho": true,
+      "Default": ""
+    },
+    "SoopClientSecret": {
+      "Type": "String",
+      "NoEcho": true,
+      "Default": ""
+    },
+    "YouTubeClientId": {
+      "Type": "String",
+      "NoEcho": true,
+      "Default": ""
+    }
+  },
+  "Conditions": {
+    "IsDev": {
+      "Fn::Equals": [
+        {
+          "Ref": "StageName"
+        },
+        "dev"
+      ]
+    }
+  },
+  "Resources": {
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/galashow-${StageName}-polychat-relay"
+        },
+        "RetentionInDays": 14
+      }
+    },
+    "Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "logs",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "LogGroup",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Function": {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": [
+        "LogGroup"
+      ],
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "galashow-${StageName}-polychat-relay"
+        },
+        "Description": {
+          "Fn::Sub": "GalaShow Client PolyChat relay, polychat-bridge ${PolyChatVersion}"
+        },
+        "Runtime": "nodejs22.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "run.sh",
+        "Code": {
+          "S3Bucket": {
+            "Ref": "CodeBucket"
+          },
+          "S3Key": {
+            "Ref": "CodeKey"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "Role",
+            "Arn"
+          ]
+        },
+        "MemorySize": 512,
+        "Timeout": 900,
+        "Layers": [
+          {
+            "Ref": "AdapterLayerArn"
+          }
+        ],
+        "Environment": {
+          "Variables": {
+            "AWS_LAMBDA_EXEC_WRAPPER": "/opt/bootstrap",
+            "AWS_LWA_INVOKE_MODE": "response_stream",
+            "AWS_LWA_PORT": "8080",
+            "AWS_LWA_READINESS_CHECK_PATH": "/config",
+            "POLYCHAT_RELAY_HOST": "127.0.0.1",
+            "POLYCHAT_RELAY_PORT": "8080",
+            "POLYCHAT_ALLOWED_ORIGINS": {
+              "Fn::If": [
+                "IsDev",
+                "https://dev.galashow.cloud",
+                "https://galashow.cloud"
+              ]
+            },
+            "CHZZK_CLIENT_ID": {
+              "Ref": "ChzzkClientId"
+            },
+            "CHZZK_CLIENT_SECRET": {
+              "Ref": "ChzzkClientSecret"
+            },
+            "SOOP_CLIENT_ID": {
+              "Ref": "SoopClientId"
+            },
+            "SOOP_CLIENT_SECRET": {
+              "Ref": "SoopClientSecret"
+            },
+            "YOUTUBE_CLIENT_ID": {
+              "Ref": "YouTubeClientId"
+            }
+          }
+        }
+      }
+    },
+    "Url": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {
+        "TargetFunctionArn": {
+          "Ref": "Function"
+        },
+        "AuthType": "NONE",
+        "InvokeMode": "RESPONSE_STREAM"
+      }
+    },
+    "UrlPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "Function"
+        },
+        "Action": "lambda:InvokeFunctionUrl",
+        "Principal": "*",
+        "FunctionUrlAuthType": "NONE"
+      }
+    },
+    "InvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "Function"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "*",
+        "InvokedViaFunctionUrl": true
+      }
+    }
+  },
+  "Outputs": {
+    "FunctionUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Url",
+          "FunctionUrl"
+        ]
+      }
+    },
+    "FunctionUrlHost": {
+      "Value": {
+        "Fn::Select": [
+          2,
+          {
+            "Fn::Split": [
+              "/",
+              {
+                "Fn::GetAtt": [
+                  "Url",
+                  "FunctionUrl"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ Requires the Python playwright package and an installed Microsoft Edge browser.
 These animations illustrate sample choices, not implemented Unity gameplay.
 """
 import base64
+import sys
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -16,6 +17,8 @@ GAMES = [
      "color": "#2563eb", "hint": "채팅으로 1, 2, 3 중 하나를 입력하세요"},
     {"kind": "survival", "title": "생존 챌린지", "choices": ["도전", "대기"],
      "color": "#059669", "hint": "채팅으로 도전 또는 대기를 입력하세요"},
+    {"kind": "minority", "title": "소수의 선택", "choices": ["A", "B"],
+     "color": "#ea580c", "hint": "채팅으로 A 또는 B를 입력하세요. 적게 고른 쪽이 살아남습니다"},
 ]
 
 RENDER = r"""async (game) => {
@@ -94,12 +97,14 @@ RENDER = r"""async (game) => {
 }"""
 
 
-def build():
+def build(kinds=None):
+    """kinds를 주면 해당 게임 영상만 만든다. 예: python build-sample-videos.py minority"""
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    games = [game for game in GAMES if not kinds or game["kind"] in kinds]
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(channel="msedge", headless=True)
         page = browser.new_page()
-        for game in GAMES:
+        for game in games:
             video = base64.b64decode(page.evaluate(RENDER, game))
             path = OUTPUT / f"game-{game['kind']}.mp4"
             path.write_bytes(video)
@@ -108,4 +113,4 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
+    build(sys.argv[1:])

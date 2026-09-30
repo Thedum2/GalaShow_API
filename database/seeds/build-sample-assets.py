@@ -35,6 +35,7 @@ def write_pdf(path, title):
 def build():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     colors = {"purple": "#7c3aed", "blue": "#2563eb", "green": "#059669", "pink": "#db2777"}
+    game_colors = {**colors, "orange": "#ea580c"}
     for name, color in colors.items():
         avatar = f'''<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
 <title>GalaShow sample avatar: {name}</title>
@@ -53,9 +54,10 @@ def build():
 <text x="80" y="990" fill="white" opacity=".6" font-family="sans-serif" font-size="30">GALASHOW / DEVELOPMENT SAMPLE</text>
 </svg>'''
             (OUTPUT / f"background-{name}.svg").write_text(background, encoding="utf-8")
-    for kind, label, color in [("choice", "LEFT / RIGHT", colors["purple"]),
-                               ("vote", "1 / 2 / 3", colors["blue"]),
-                               ("survival", "SURVIVAL", colors["green"])]:
+    for kind, label, color in [("choice", "LEFT / RIGHT", game_colors["purple"]),
+                               ("vote", "1 / 2 / 3", game_colors["blue"]),
+                               ("survival", "SURVIVAL", game_colors["green"]),
+                               ("minority", "A / B MINORITY", game_colors["orange"])]:
         logo = f'''<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320" viewBox="0 0 480 320">
 <title>GalaShow sample game: {kind}</title><rect width="480" height="320" rx="32" fill="{color}"/>
 <text x="240" y="160" text-anchor="middle" fill="white" font-family="sans-serif" font-size="42" font-weight="bold">{label}</text>
@@ -65,7 +67,7 @@ def build():
         shutil.copyfile(ROOT / f"Client/src/assets/svg/{icon}.svg", OUTPUT / f"{icon}.svg")
     write_pdf(OUTPUT / "sample-terms.pdf", "Sample Terms of Service")
     write_pdf(OUTPUT / "sample-privacy.pdf", "Sample Privacy Policy")
-    print(f"Built 15 development sample assets in {OUTPUT}")
+    print(f"Built 16 development sample assets in {OUTPUT}")
 
 
 if __name__ == "__main__":

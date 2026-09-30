@@ -125,12 +125,12 @@ API를 재배포해 최신 초기화 함수를 올린 후 위 호출 예시의 p
 | 배경 이미지 | 3 |
 | 정책 링크 묶음 | 1 (샘플 PDF 2개) |
 | SNS 링크 | 3 (플랫폼 홈 링크) |
-| 미니게임 | 3 |
-| 미니게임 태그/설명 단계/조작법 | 18 / 9 / 7 |
-| 가상 생존 통계 | 3 |
+| 미니게임 | 4 |
+| 미니게임 태그/설명 단계/조작법 | 24 / 12 / 9 |
+| 가상 생존 통계 | 4 |
 | 아바타 | 4 |
 
-각 이름·문구에 `[샘플]`을 표시한다. 미니게임은 카탈로그/폼 검증용이며 실행 가능한 Unity 플러그인을 추가하지 않는다. 영상 URL은 각 게임의 선택지를 보여주는 6초 무음 H.264 MP4 샘플을 가리킨다. 영상에도 실제 게임 플레이가 아닌 개발용 샘플임을 표시한다. 아바타 `gif_url`은 현재 관리자 `<img>`가 지원하는 SVG 샘플을 가리킨다. PDF는 실제 약관/개인정보 정책이 아닌 화면 확인용 문서라고 본문에 표시한다. 계정과 refresh token 샘플은 생성하지 않는다.
+각 이름·문구에 `[샘플]`을 표시한다. `[샘플]` 미니게임 4종은 카탈로그/폼 검증용이며 Unity로 실행되지 않는다. 파일 끝의 **트롤리 딜레마**(Unity 플러그인 `galashow.trolley`, `game_data.pluginId`·딜레마 22개·단계 시간·튜토리얼·조작 키, docs/minigame-trolley.md 4·8절)만 실제로 실행되는 게임이며 이름으로 중복을 막는다. 영상 URL은 각 게임의 선택지를 보여주는 6초 무음 H.264 MP4 샘플을 가리킨다. 영상에도 실제 게임 플레이가 아닌 개발용 샘플임을 표시한다. 아바타 `gif_url`은 현재 관리자 `<img>`가 지원하는 SVG 샘플을 가리킨다. PDF는 실제 약관/개인정보 정책이 아닌 화면 확인용 문서라고 본문에 표시한다. 계정과 refresh token 샘플은 생성하지 않는다.
 
 기존 데이터는 보존한다. 빈 배너 문구와 ID·이름이 모두 일치하는 샘플 게임의 빈 영상 URL만 채우며, 배경·SNS·게임·아바타는 충돌한 ID를 덮어쓰지 않는다. 이미 등록된 영상 URL은 유지한다. 정책 테이블에 행이 있으면 샘플 정책을 추가하지 않는다. 관련 데이터는 ID와 이름이 일치하는 샘플 게임에만 추가하고, 같은 태그 유형·설명 단계·조작명·통계가 있으면 건너뛴다. 기존 ID가 사용 중이면 실제 추가 수량은 표보다 적을 수 있다. 입력 전체를 트랜잭션으로 실행하며 반환하는 `tableRowCounts`는 기존 데이터를 포함한 테이블 전체 행 수다.
 
@@ -139,11 +139,11 @@ API를 재배포해 최신 초기화 함수를 올린 후 위 호출 예시의 p
 ```powershell
 python API/database/seeds/build-sample-assets.py
 # 영상 재생성에만 Python playwright 패키지와 Microsoft Edge가 필요하다.
-python API/database/seeds/build-sample-videos.py
+python API/database/seeds/build-sample-videos.py            # 전체. 특정 게임만: build-sample-videos.py minority
 aws s3 sync Client/public/sample-data/v1 s3://galashow-251113431583-dev-client/sample-data/v1 --profile galashow --region ap-northeast-2
 ```
 
-`Client/public/sample-data/v1`에 생성된 SVG 13개, PDF 2개, MP4 3개는 Git으로 관리하고 이후 Client 배포에도 포함한다. SQL의 에셋 기준 주소는 `https://dev.galashow.cloud/sample-data/v1/`다. 영상 파일은 `game-choice.mp4`, `game-vote.mp4`, `game-survival.mp4`이며 S3에서는 `Content-Type: video/mp4`로 제공한다.
+`Client/public/sample-data/v1`에 생성된 SVG 14개, PDF 2개, MP4 4개는 Git으로 관리하고 이후 Client 배포에도 포함한다. SQL의 에셋 기준 주소는 `https://dev.galashow.cloud/sample-data/v1/`다. 영상 파일은 `game-choice.mp4`, `game-vote.mp4`, `game-survival.mp4`, `game-minority.mp4`이며 S3에서는 `Content-Type: video/mp4`로 제공한다.
 
 최신 초기화 Lambda를 개발 API 스택에 배포한 뒤 `{"action":"seed-dev-samples"}`를 `galashow-cloud-dev-database-initializer`에 호출한다. invoke 결과의 `FunctionError` 부재와 본문 `result=samples-seeded`, `schemaVersion=v002`, `tableRowCounts`를 확인한다. 스키마 초기화를 다시 실행할 필요는 없다. 동일 샘플을 재호출해도 중복 행을 만들지 않는다.
 

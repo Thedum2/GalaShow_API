@@ -182,6 +182,12 @@ namespace GalaShow.Minigame
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
             }
 
+            var phaseError = PhaseDataRules.Validate(dto.PhaseData);
+            if (phaseError != null)
+            {
+                return ErrorResults.Json(ErrorCode.BadRequest, phaseError);
+            }
+
             if (await MinigameService.Instance.ExistsByNameAsync(dto.Name))
             {
                 return ErrorResults.Json(ErrorCode.MinigameAlreadyExists);
@@ -214,6 +220,12 @@ namespace GalaShow.Minigame
             if (dto == null || string.IsNullOrWhiteSpace(dto.Name))
             {
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
+            }
+
+            var updatePhaseError = PhaseDataRules.Validate(dto.PhaseData);
+            if (updatePhaseError != null)
+            {
+                return ErrorResults.Json(ErrorCode.BadRequest, updatePhaseError);
             }
 
             var existing = await MinigameService.Instance.ExistsByIdAsync(gameId);

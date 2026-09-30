@@ -15,6 +15,11 @@
     "CertificateArn": {
       "Type": "String",
       "AllowedPattern": "arn:aws:acm:us-east-1:.*"
+    },
+    "PolyChatRelayHost": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Function URL host of galashow-cloud-polychat-relay-<stage>; empty disables /polychat/*"
     }
   },
   "Conditions": {
@@ -24,6 +29,18 @@
           "Ref": "StageName"
         },
         "dev"
+      ]
+    },
+    "HasPolyChatRelay": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "PolyChatRelayHost"
+            },
+            ""
+          ]
+        }
       ]
     }
   },
@@ -172,23 +189,59 @@
           "HttpVersion": "http2and3",
           "IPV6Enabled": true,
           "PriceClass": "PriceClass_200",
-          "Origins": [
-            {
-              "Id": "web",
-              "DomainName": {
-                "Fn::GetAtt": [
-                  "ClientBucket",
-                  "RegionalDomainName"
-                ]
-              },
-              "OriginAccessControlId": {
-                "Ref": "OriginAccessControl"
-              },
-              "S3OriginConfig": {
-                "OriginAccessIdentity": ""
-              }
-            }
-          ],
+          "Origins": {
+            "Fn::If": [
+              "HasPolyChatRelay",
+              [
+                {
+                  "Id": "web",
+                  "DomainName": {
+                    "Fn::GetAtt": [
+                      "ClientBucket",
+                      "RegionalDomainName"
+                    ]
+                  },
+                  "OriginAccessControlId": {
+                    "Ref": "OriginAccessControl"
+                  },
+                  "S3OriginConfig": {
+                    "OriginAccessIdentity": ""
+                  }
+                },
+                {
+                  "Id": "polychat",
+                  "DomainName": {
+                    "Ref": "PolyChatRelayHost"
+                  },
+                  "CustomOriginConfig": {
+                    "OriginProtocolPolicy": "https-only",
+                    "OriginSSLProtocols": [
+                      "TLSv1.2"
+                    ],
+                    "OriginReadTimeout": 60,
+                    "OriginKeepaliveTimeout": 60
+                  }
+                }
+              ],
+              [
+                {
+                  "Id": "web",
+                  "DomainName": {
+                    "Fn::GetAtt": [
+                      "ClientBucket",
+                      "RegionalDomainName"
+                    ]
+                  },
+                  "OriginAccessControlId": {
+                    "Ref": "OriginAccessControl"
+                  },
+                  "S3OriginConfig": {
+                    "OriginAccessIdentity": ""
+                  }
+                }
+              ]
+            ]
+          },
           "DefaultCacheBehavior": {
             "TargetOriginId": "web",
             "ViewerProtocolPolicy": "redirect-to-https",
@@ -224,31 +277,95 @@
             "SslSupportMethod": "sni-only",
             "MinimumProtocolVersion": "TLSv1.2_2021"
           },
-          "CacheBehaviors": [
-            {
-              "PathPattern": "/sample-data/*",
-              "TargetOriginId": "web",
-              "ViewerProtocolPolicy": "redirect-to-https",
-              "AllowedMethods": [
-                "GET",
-                "HEAD",
-                "OPTIONS"
+          "CacheBehaviors": {
+            "Fn::If": [
+              "HasPolyChatRelay",
+              [
+                {
+                  "PathPattern": "/sample-data/*",
+                  "TargetOriginId": "web",
+                  "ViewerProtocolPolicy": "redirect-to-https",
+                  "AllowedMethods": [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS"
+                  ],
+                  "CachedMethods": [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS"
+                  ],
+                  "Compress": true,
+                  "CachePolicyId": {
+                    "Ref": "CachePolicy"
+                  },
+                  "OriginRequestPolicyId": "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf",
+                  "ResponseHeadersPolicyId": {
+                    "Ref": "SampleAssetsCorsPolicy"
+                  }
+                },
+                {
+                  "PathPattern": "/polychat/*",
+                  "TargetOriginId": "polychat",
+                  "ViewerProtocolPolicy": "https-only",
+                  "AllowedMethods": [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS",
+                    "PUT",
+                    "PATCH",
+                    "POST",
+                    "DELETE"
+                  ],
+                  "CachedMethods": [
+                    "GET",
+                    "HEAD"
+                  ],
+                  "Compress": false,
+                  "CachePolicyId": {
+                    "Ref": "PolyChatCachePolicy"
+                  },
+                  "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+                  "FunctionAssociations": [
+                    {
+                      "EventType": "viewer-request",
+                      "FunctionARN": {
+                        "Fn::GetAtt": [
+                          "PolyChatPathRewrite",
+                          "FunctionARN"
+                        ]
+                      }
+                    }
+                  ]
+                }
               ],
-              "CachedMethods": [
-                "GET",
-                "HEAD",
-                "OPTIONS"
-              ],
-              "Compress": true,
-              "CachePolicyId": {
-                "Ref": "CachePolicy"
-              },
-              "OriginRequestPolicyId": "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf",
-              "ResponseHeadersPolicyId": {
-                "Ref": "SampleAssetsCorsPolicy"
-              }
-            }
-          ]
+              [
+                {
+                  "PathPattern": "/sample-data/*",
+                  "TargetOriginId": "web",
+                  "ViewerProtocolPolicy": "redirect-to-https",
+                  "AllowedMethods": [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS"
+                  ],
+                  "CachedMethods": [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS"
+                  ],
+                  "Compress": true,
+                  "CachePolicyId": {
+                    "Ref": "CachePolicy"
+                  },
+                  "OriginRequestPolicyId": "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf",
+                  "ResponseHeadersPolicyId": {
+                    "Ref": "SampleAssetsCorsPolicy"
+                  }
+                }
+              ]
+            ]
+          }
         }
       }
     },
@@ -621,6 +738,52 @@
             },
             "AccessControlMaxAgeSec": 86400,
             "OriginOverride": true
+          }
+        }
+      }
+    },
+    "PolyChatPathRewrite": {
+      "Type": "AWS::CloudFront::Function",
+      "Condition": "HasPolyChatRelay",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "galashow-${StageName}-polychat"
+        },
+        "AutoPublish": true,
+        "FunctionConfig": {
+          "Comment": "Strip the /polychat mount before forwarding to the relay",
+          "Runtime": "cloudfront-js-2.0"
+        },
+        "FunctionCode": "function handler(event) {\n  var request = event.request;\n  request.uri = request.uri.substring(9) || '/';\n  return request;\n}\n"
+      }
+    },
+    "PolyChatCachePolicy": {
+      "Type": "AWS::CloudFront::CachePolicy",
+      "Condition": "HasPolyChatRelay",
+      "Properties": {
+        "CachePolicyConfig": {
+          "Name": {
+            "Fn::Sub": "galashow-${StageName}-polychat"
+          },
+          "Comment": "Never cache; Authorization is in the key so CloudFront forwards it",
+          "DefaultTTL": 0,
+          "MaxTTL": 1,
+          "MinTTL": 0,
+          "ParametersInCacheKeyAndForwardedToOrigin": {
+            "CookiesConfig": {
+              "CookieBehavior": "none"
+            },
+            "HeadersConfig": {
+              "HeaderBehavior": "whitelist",
+              "Headers": [
+                "Authorization"
+              ]
+            },
+            "QueryStringsConfig": {
+              "QueryStringBehavior": "all"
+            },
+            "EnableAcceptEncodingGzip": false,
+            "EnableAcceptEncodingBrotli": false
           }
         }
       }
