@@ -36,6 +36,7 @@ namespace GalaShow.Common.Errors
             [ErrorCode.MinigameInUse]        = new(ErrorCode.MinigameInUse, "Minigame is in use"),
             [ErrorCode.MinigameInvalidTags]  = new(ErrorCode.MinigameInvalidTags, "Invalid minigame tags"),
             [ErrorCode.AvatarDuplicateOrder] = new(ErrorCode.AvatarDuplicateOrder, "Duplicate avatar order"),
+            [ErrorCode.AvatarLimitExceeded]  = new(ErrorCode.AvatarLimitExceeded, "Too many viewer avatars (max 8)"),
 
             // Resource Update Failed Errors
             [ErrorCode.BannerUpdateFailed]       = new(ErrorCode.BannerUpdateFailed, "Failed to update banner"),

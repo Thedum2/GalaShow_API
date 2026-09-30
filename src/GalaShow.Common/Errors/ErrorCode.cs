@@ -33,6 +33,7 @@ namespace GalaShow.Common.Errors
         MinigameInUse = 456,
         MinigameInvalidTags = 457,
         AvatarDuplicateOrder = 461,
+        AvatarLimitExceeded = 462,
 
         // Resource Update Failed Errors (540-549 range)
         BannerUpdateFailed = 540,

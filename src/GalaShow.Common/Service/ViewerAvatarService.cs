@@ -7,6 +7,11 @@ namespace GalaShow.Common.Service
 {
     public sealed class ViewerAvatarService : AsyncSingleton<ViewerAvatarService>
     {
+        /// <summary>시청자 아바타는 최대 8개까지 등록한다.</summary>
+        public const int MaxAvatars = 8;
+
+        public static bool ExceedsLimit(IReadOnlyCollection<ViewerAvatarDto> avatars) => avatars.Count > MaxAvatars;
+
         private readonly ViewerAvatarRepository _repo = new();
 
         private ViewerAvatarService() { }

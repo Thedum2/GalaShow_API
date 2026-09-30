@@ -349,6 +349,11 @@ namespace GalaShow.Minigame
                 return ErrorResults.Json(ErrorCode.BadRequest, "Invalid request body");
             }
 
+            if (ViewerAvatarService.ExceedsLimit(dto.Data))
+            {
+                return ErrorResults.Json(ErrorCode.AvatarLimitExceeded);
+            }
+
             if (await ViewerAvatarService.Instance.HasDuplicateOrdersAsync(dto.Data))
             {
                 return ErrorResults.Json(ErrorCode.AvatarDuplicateOrder);
